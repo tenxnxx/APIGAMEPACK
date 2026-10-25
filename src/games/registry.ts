@@ -20,6 +20,7 @@ export type GameProvider =
   | 'rtnw-oneone-id'
   | 'rtnw-oneone-ph'
   | 'rtnw-oneone-sg'
+  | 'bloodstrike-netease'
 export type GameRegistryEntry = {
   appId: number
   slug: string
@@ -179,6 +180,16 @@ export const GAME_REGISTRY: Record<string, GameRegistryEntry> = {
     slug: 'yulgang-w',
     provider: 'yulgang-w-appstore'
   },
+  'blood-strike': {
+    appId: 1637059453,
+    slug: 'blood-strike',
+    provider: 'bloodstrike-netease'
+  },
+  bloodstrike: {
+    appId: 1637059453,
+    slug: 'blood-strike',
+    provider: 'bloodstrike-netease'
+  },
   // --- Ragnarok: The New World (OneOne OOC) — country-separated SEA ---
   // Add to GameProvider union:
   //   | 'rtnw-oneone'
@@ -310,6 +321,7 @@ const GAME_DISPLAY_NAMES: Record<string, string> = {
   roblox: 'Roblox',
   'wuthering-waves': 'Wuthering Waves',
   'yulgang-w': 'Yulgang W',
+  'blood-strike': 'Blood Strike',
   'ragnarok-the-new-world': 'Ragnarok: The New World (TH)',
   'ragnarok-the-new-world-my': 'Ragnarok: The New World (MY)',
   'ragnarok-the-new-world-id': 'Ragnarok: The New World (ID)',

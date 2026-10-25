@@ -4435,3 +4435,125 @@ describe('GET /games/ragnarok-the-new-world/regions/', () => {
     })
   })
 })
+
+
+describe('GET /games/blood-strike/packs/', () => {
+  const lp = (thb: number, usd: number) =>
+    JSON.stringify({
+      TH: { 'NetEase Pay': { price: usd, currency: 'USD' }, default: { price: thb, currency: 'THB' } },
+      US: { default: { price: usd, currency: 'USD' } }
+    })
+  const product = (
+    goodsid: string,
+    en: string,
+    usd: string,
+    thb: number,
+    extra: Record<string, unknown> = {}
+  ) => ({
+    goodsid,
+    goodsinfo: en,
+    currency: 'USD',
+    price: usd,
+    platform: 'ios',
+    status: 1,
+    permanent_display_flag: 1,
+    extra: { unipay: 'true', local_price: lp(thb, Number(usd)) },
+    multi_language: { default: { 'en-US': { goodsinfo: en } } },
+    ...extra
+  })
+  const payload = {
+    code: '0000',
+    msg: null,
+    data: [
+      product('g83naxx1ena.USD.gold100.ally', '100 Golds', '0.9900', 39),
+      product('g83naxx1ena.USD.gold100.ally', '100 Golds', '0.9900', 39, { platform: 'pc' }),
+      product('g83naxx1ena.USD.gold5000.ally', '5000 Golds', '49.9900', 1990),
+      product('g83naxx1ena.usd.399pass.ally', 'Strike Pass Elite', '3.9900', 159),
+      // time-limited event item: excluded
+      product('g83naxx1ena.usd.099package.ally', 'Lucky Bag Week', '0.9900', 39, {
+        permanent_display_flag: 0
+      }),
+      // VN-only Funcard item: excluded (not USD)
+      {
+        goodsid: 'g83naxx1ena.allysdk.funtap.VND.20000.id1',
+        goodsinfo: 'gold96',
+        currency: 'VND',
+        price: '20000.0000',
+        status: 1,
+        permanent_display_flag: 1,
+        extra: { unipay: 'true' }
+      }
+    ]
+  }
+
+  it('maps live NetEase GamesClub products to THB + USD packs', async () => {
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.startsWith('https://pay.neteasegames.com/gameclub/products/bloodstrike')) {
+        return new Response(JSON.stringify(payload), { status: 200 })
+      }
+      throw new Error('unexpected fetch: ' + url)
+    }) as unknown as typeof fetch
+
+    const response = await app.handle(
+      new Request('http://localhost/games/blood-strike/packs/')
+    )
+    expect(response.status).toBe(200)
+    const body = await response.json()
+    expect(body.game).toMatchObject({ slug: 'blood-strike', name: 'Blood Strike', itemName: 'Gold' })
+    expect(body.source).toBe('https://pay.neteasegames.com/BloodStrike/topup')
+    expect(body.summary).toEqual({ categoryCount: 2, packCount: 3 })
+
+    const gold = body.categories[0]
+    expect(gold.name).toBe('Gold')
+    expect(gold.packs.map((p: { name: string }) => p.name)).toEqual(['100 Golds', '5000 Golds'])
+    expect(gold.packs[0]).toMatchObject({
+      baseItemAmount: 100,
+      price_thb: 39,
+      price_usd: 0.99,
+      prices: { THB: 39, USD: 0.99 },
+      currency: 'THB',
+      price_thb_source: 'netease-gameclub'
+    })
+    expect(gold.packs[1]).toMatchObject({ price_thb: 1990, price_usd: 49.99 })
+    expect(body.categories[1].packs[0]).toMatchObject({
+      name: 'Strike Pass Elite',
+      price_thb: 159,
+      price_usd: 3.99
+    })
+  })
+
+  it('alias /games/bloodstrike/packs/ resolves same provider', async () => {
+    globalThis.fetch = (async () =>
+      new Response(JSON.stringify(payload), { status: 200 })) as unknown as typeof fetch
+    const response = await app.handle(new Request('http://localhost/games/bloodstrike/packs/'))
+    expect(response.status).toBe(200)
+    expect((await response.json()).game.slug).toBe('blood-strike')
+  })
+
+  it('returns 502 when upstream is unavailable (no static fallback)', async () => {
+    globalThis.fetch = (async () => {
+      throw new Error('network')
+    }) as unknown as typeof fetch
+    const response = await app.handle(new Request('http://localhost/games/blood-strike/packs/'))
+    expect(response.status).toBe(502)
+    expect(await response.json()).toEqual({ error: 'Upstream service unavailable' })
+  })
+
+  it('returns 502 on non-OK upstream status', async () => {
+    globalThis.fetch = (async () => new Response('nope', { status: 503 })) as unknown as typeof fetch
+    const response = await app.handle(new Request('http://localhost/games/blood-strike/packs/'))
+    expect(response.status).toBe(502)
+    expect(await response.json()).toEqual({ error: 'Upstream service unavailable' })
+  })
+
+  it('returns 502 when upstream payload is invalid or empty', async () => {
+    for (const bad of [{ code: '9999', data: null }, { code: '0000', data: [] }]) {
+      globalThis.fetch = (async () =>
+        new Response(JSON.stringify(bad), { status: 200 })) as unknown as typeof fetch
+      const response = await app.handle(new Request('http://localhost/games/blood-strike/packs/'))
+      expect(response.status).toBe(502)
+      expect(await response.json()).toEqual({ error: 'Invalid upstream response' })
+    }
+  })
+})

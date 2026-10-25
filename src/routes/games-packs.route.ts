@@ -1,141 +1,112 @@
 import { Elysia } from 'elysia'
-
 import { getGameBySlug } from '../games/registry'
-
-
-
 import {
+  BloodStrikeInvalidUpstreamResponseError,
+  BloodStrikeUpstreamUnavailableError,
+  fetchBloodStrikePacks
+} from '../services/bloodstrike-packs.service'
+import {
+  ClashOfCrittersInvalidUpstreamResponseError,
   ClashOfCrittersUpstreamUnavailableError,
   fetchClashOfCrittersOfficialPacks
 } from '../services/clash-of-critters-packs.service'
-
 import {
   fetchCodMobilePacks
 } from '../services/cod-mobile-packs.service'
-
 import {
+  CookieRunClassic24buymInvalidUpstreamResponseError,
   CookieRunClassic24buymUpstreamUnavailableError,
   fetchCookieRunClassic24buymPacks
 } from '../services/cookierun-classic-24buym-packs.service'
-
 import {
+  CookieRunClassicAppStoreInvalidUpstreamResponseError,
   CookieRunClassicAppStoreUpstreamUnavailableError,
   fetchCookieRunClassicAppStorePacks
 } from '../services/cookierun-classic-appstore-packs.service'
-
 import {
   fetchDeltaForcePacks
 } from '../services/delta-force-packs.service'
-
 import {
+  EfootballInvalidUpstreamResponseError,
   EfootballUpstreamUnavailableError,
   fetchEfootballIosPacks
 } from '../services/efootball-packs.service'
-
 import {
   fetchFcOnlineMPacks
 } from '../services/fc-online-m-packs.service'
-
 import {
   fetchFreefirePacks
 } from '../services/freefire-packs.service'
-
 import {
-  fetchHeartopiaXdPacks,
-  HeartopiaXdUpstreamUnavailableError
+  HeartopiaXdInvalidUpstreamResponseError,
+  HeartopiaXdUpstreamUnavailableError,
+  fetchHeartopiaXdPacks
 } from '../services/heartopia-xd-packs.service'
-
 import {
-  fetchKingshotOfficialPacks,
-  KingshotUpstreamUnavailableError
+  KingshotInvalidUpstreamResponseError,
+  KingshotUpstreamUnavailableError,
+  fetchKingshotOfficialPacks
 } from '../services/kingshot-packs.service'
-
 import {
-  fetchLastWar24buymPacks,
-  LastWar24buymUpstreamUnavailableError
+  LastWar24buymInvalidUpstreamResponseError,
+  LastWar24buymUpstreamUnavailableError,
+  fetchLastWar24buymPacks
 } from '../services/lastwar-24buym-packs.service'
-
 import {
-  fetchLastWarOfficialPacks,
-  LastWarUpstreamUnavailableError
+  LastWarInvalidUpstreamResponseError,
+  LastWarUpstreamUnavailableError,
+  fetchLastWarOfficialPacks
 } from '../services/lastwar-packs.service'
-
 import {
-  fetchMlbbCodashopPacks,
-  MlbbUpstreamUnavailableError
+  MlbbInvalidUpstreamResponseError,
+  MlbbUpstreamUnavailableError,
+  fetchMlbbCodashopPacks
 } from '../services/mlbb-packs.service'
-
 import {
-  fetchPubgMobileMidasbuyPacks,
-  PubgmUpstreamUnavailableError
+  PubgmInvalidUpstreamResponseError,
+  PubgmUpstreamUnavailableError,
+  fetchPubgMobileMidasbuyPacks
 } from '../services/pubgm-packs.service'
-
 import {
+  RagnarokTnwInvalidUpstreamResponseError,
+  RagnarokTnwUpstreamUnavailableError,
   fetchRagnarokTheNewWorldPacks,
   listRagnarokTheNewWorldRegions,
-  RagnarokTnwUpstreamUnavailableError,
   resolveRagnarokTnwRegionFromSlug
 } from '../services/ragnarok-the-new-world-packs.service'
-
 import {
-  fetchRobloxPacks,
-  RobloxUpstreamUnavailableError
+  RobloxInvalidUpstreamResponseError,
+  RobloxUpstreamUnavailableError,
+  fetchRobloxPacks
 } from '../services/roblox-packs.service'
-
 import {
   fetchRovPacks
 } from '../services/rov-packs.service'
-
 import {
-  fetchTermgamePacks,
   InvalidUpstreamResponseError,
-  UpstreamUnavailableError
+  UpstreamUnavailableError,
+  fetchTermgamePacks
 } from '../services/termgame-packs.service'
-
 import {
-  fetchWhiteoutSurvival24buymPacks,
-  WhiteoutSurvival24buymUpstreamUnavailableError
+  WhiteoutSurvival24buymInvalidUpstreamResponseError,
+  WhiteoutSurvival24buymUpstreamUnavailableError,
+  fetchWhiteoutSurvival24buymPacks
 } from '../services/whiteout-survival-24buym-packs.service'
-
 import {
+  WhiteoutSurvivalInvalidUpstreamResponseError,
+  WhiteoutSurvivalUpstreamUnavailableError,
   fetchWhiteoutSurvivalOfficialPacks
 } from '../services/whiteout-survival-packs.service'
-
 import {
-  fetchWutheringWavesMidasbuyPacks,
-  WuwaUpstreamUnavailableError
+  WuwaInvalidUpstreamResponseError,
+  WuwaUpstreamUnavailableError,
+  fetchWutheringWavesMidasbuyPacks
 } from '../services/wuwa-packs.service'
-
 import {
-  fetchYulgangWPacks,
-  YulgangWUpstreamUnavailableError
+  YulgangWInvalidUpstreamResponseError,
+  YulgangWUpstreamUnavailableError,
+  fetchYulgangWPacks
 } from '../services/yulgang-w-packs.service'
-
-import {
-  fetchRagnarokTheNewWorldPacks,
-  listRagnarokTheNewWorldRegions,
-  resolveRagnarokTnwRegionFromSlug,
-  RagnarokTnwUpstreamUnavailableError,
-  RagnarokTnwInvalidUpstreamResponseError
-} from '../services/ragnarok-the-new-world-packs.service'
-
-
-import {
-  fetchRovPacks
-} from '../services/rov-packs.service'
-import {
-  fetchFreefirePacks
-} from '../services/freefire-packs.service'
-
-import {
-  fetchDeltaForcePacks
-} from '../services/delta-force-packs.service'
-import {
-  fetchFcOnlineMPacks
-} from '../services/fc-online-m-packs.service'
-import {
-  fetchCodMobilePacks
-} from '../services/cod-mobile-packs.service'
 
 export const gamesPacksRoutes = new Elysia().get(
   '/games/:slug/packs/',
@@ -442,6 +413,20 @@ export const gamesPacksRoutes = new Elysia().get(
         throw error
       }
     } 
+
+    if (game.provider === 'bloodstrike-netease') {
+      try {
+        return await fetchBloodStrikePacks()
+      } catch (error) {
+        if (error instanceof BloodStrikeUpstreamUnavailableError) {
+          return status(502, { error: 'Upstream service unavailable' })
+        }
+        if (error instanceof BloodStrikeInvalidUpstreamResponseError) {
+          return status(502, { error: 'Invalid upstream response' })
+        }
+        throw error
+      }
+    }
 
     try {
       return await fetchTermgamePacks({
