@@ -1,5 +1,6 @@
-import { afterEach, describe, expect, it } from 'bun:test'
+import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
 import { app } from './index'
+import { clearPacksCache, setPacksCache } from './lib/packs-cache'
 
 const originalFetch = globalThis.fetch
 
@@ -90,8 +91,13 @@ const upstreamPayload = {
   tabs: []
 }
 
+beforeEach(() => {
+  clearPacksCache()
+})
+
 afterEach(() => {
   globalThis.fetch = originalFetch
+  clearPacksCache()
 })
 
 describe('GET /health', () => {
@@ -149,6 +155,32 @@ describe('GET /styles.css and /app.js', () => {
     expect(js.status).toBe(200)
     expect(css.headers.get('cache-control')).toBe('public, max-age=3600')
     expect(js.headers.get('cache-control')).toBe('public, max-age=3600')
+  })
+})
+
+describe('packs response cache', () => {
+  it('serves HIT from memory without calling upstream again', async () => {
+    let fetches = 0
+    globalThis.fetch = (async () => {
+      fetches += 1
+      return new Response('should not be called', { status: 500 })
+    }) as typeof fetch
+
+    setPacksCache('rov', 200, {
+      game: { id: 1, slug: 'rov', name: 'RoV', itemName: 'Coupon', itemIcon: '' },
+      categories: [],
+      summary: { categoryCount: 0, packCount: 0 },
+      fetchedAt: '2026-01-01T00:00:00.000Z',
+      source: 'cache-test'
+    })
+
+    const response = await app.handle(
+      new Request('http://localhost/games/rov/packs/')
+    )
+    expect(response.status).toBe(200)
+    expect(response.headers.get('x-packs-cache')).toBe('HIT')
+    expect(await response.json()).toMatchObject({ source: 'cache-test' })
+    expect(fetches).toBe(0)
   })
 })
 

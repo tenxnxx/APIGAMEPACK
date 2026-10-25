@@ -40,12 +40,18 @@
       </aside>
 
       <section class="detail-panel" aria-live="polite">
+        <div id="loading-overlay" class="loading-overlay hidden" aria-hidden="true">
+          <p class="pulse">กำลังโหลดแพ็ค…</p>
+          <p class="meta">สลับเกมได้ทันที ไม่ต้องรอให้จบ</p>
+        </div>
+
         <div id="empty-state" class="empty-state">
           <p>เลือกเกมทางซ้ายเพื่อโหลดแพ็คราคา</p>
         </div>
 
         <div id="loading-state" class="state hidden">
           <p class="pulse">กำลังโหลดแพ็ค…</p>
+          <p class="meta">เกมบางตัวดึงจากต้นทางอาจใช้เวลาสักครู่</p>
         </div>
 
         <div id="error-state" class="state error hidden">

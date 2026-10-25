@@ -207,8 +207,28 @@ body {
 }
 
 .detail-panel {
+  position: relative;
   min-height: 420px;
   padding: 1.1rem 1.15rem 1.4rem;
+}
+
+.detail-panel.is-loading .pack-view {
+  opacity: 0.45;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.loading-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-content: center;
+  gap: 0.35rem;
+  text-align: center;
+  border-radius: inherit;
+  background: rgba(15, 26, 23, 0.55);
+  backdrop-filter: blur(2px);
 }
 
 .empty-state,
