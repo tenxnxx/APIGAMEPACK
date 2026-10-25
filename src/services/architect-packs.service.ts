@@ -180,6 +180,7 @@ export async function fetchArchitectPacks(options?: { signal?: AbortSignal }): P
   if (!th.rows) notes.push('App Store TH: ' + th.reason)
   if (us.reason) notes.push('App Store USD storefronts: ' + us.reason)
   notes.push('Tried for THB/USD on web shop tiers: DRIMAGE web shop ?lang=th/currency/region/country params and product pages (TWD only); official site links only to this web shop; App Store TH/US/KH/LA (+ iTunes lookup); no official THB/USD price for 495-33,000 diamond web tiers.')
+  notes.push('Also tried for real THB (no conversion): App Store TH with ?l=th / ?l=en and ?platform=iphone/ipad/mac/appletv/vision (same top-10 IAP list every time); Google Play TH (com.hybeim.architect) shows only a range, no per-item prices; DRIMAGE official site TH pages, news and the oqupie FAQ list no Thai prices; no official Thai publisher or Thai payment page exists (the web shop pays via MyCard in TWD). Thai sites that list THB are resellers, so they are not used.')
   return ({
     game: { id: ARCHITECT_APP_ID, slug: ARCHITECT_SLUG, name: 'Architect: Land of Exiles', itemName: 'Diamond', itemIcon: '' },
     categories,
