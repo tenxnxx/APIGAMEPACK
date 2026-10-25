@@ -1,7 +1,11 @@
+const FETCH_TIMEOUT_MS = 45000
+
 const els = {
   gameList: document.getElementById('game-list'),
   gameCount: document.getElementById('game-count'),
   gameSearch: document.getElementById('game-search'),
+  detailPanel: document.querySelector('.detail-panel'),
+  overlay: document.getElementById('loading-overlay'),
   empty: document.getElementById('empty-state'),
   loading: document.getElementById('loading-state'),
   error: document.getElementById('error-state'),
@@ -19,6 +23,7 @@ const els = {
 
 let selectedSlug = null
 let abortController = null
+let loadSeq = 0
 let allGames = []
 
 function normalizeSearch(value) {
@@ -66,11 +71,18 @@ function renderGameList(games) {
     .join('')
 }
 
+function setBusy(isBusy, { keepContent = false } = {}) {
+  els.detailPanel?.classList.toggle('is-loading', isBusy && keepContent)
+  els.overlay?.classList.toggle('hidden', !(isBusy && keepContent))
+  if (els.overlay) els.overlay.setAttribute('aria-hidden', isBusy && keepContent ? 'false' : 'true')
+}
+
 function showState(name) {
   els.empty.classList.toggle('hidden', name !== 'empty')
   els.loading.classList.toggle('hidden', name !== 'loading')
   els.error.classList.toggle('hidden', name !== 'error')
   els.packView.classList.toggle('hidden', name !== 'packs')
+  if (name !== 'loading') setBusy(false)
 }
 
 function formatNumber(value) {
@@ -161,11 +173,13 @@ function renderPackRow(pack) {
       : ''
   ].join('')
 
-  const amounts = [
-    formatNumber(pack.baseItemAmount),
-    formatNumber(pack.bonusItemAmount),
-    formatNumber(pack.totalItemAmount)
-  ].join(' / ')
+  // Display like "5,000 + 580 (5,580)"; bonus null = official bonus source unavailable (never guessed).
+  const amounts =
+    pack.bonusItemAmount === null || pack.bonus_available === false
+      ? `${formatNumber(pack.baseItemAmount)} + ? (bonus unavailable)`
+      : Number(pack.bonusItemAmount) > 0
+        ? `${formatNumber(pack.baseItemAmount)} + ${formatNumber(pack.bonusItemAmount)} (${formatNumber(pack.totalItemAmount)})`
+        : formatNumber(pack.totalItemAmount ?? pack.baseItemAmount)
 
   const issues =
     Array.isArray(pack.issues) && pack.issues.length
@@ -220,7 +234,7 @@ function renderCategories(categories) {
             <thead>
               <tr>
                 <th>แพ็ค</th>
-                <th>base / bonus / total</th>
+                <th>base + bonus (total)</th>
                 <th>ราคา</th>
                 <th>แหล่งราคา</th>
               </tr>
@@ -295,6 +309,7 @@ async function loadGames() {
 }
 
 async function loadPacks(slug, { pushUrl = false, syncUrl = true } = {}) {
+  const seq = ++loadSeq
   selectedSlug = slug
   if (syncUrl) syncGameInUrl(slug, { push: pushUrl })
 
@@ -303,22 +318,52 @@ async function loadPacks(slug, { pushUrl = false, syncUrl = true } = {}) {
   }
 
   if (abortController) abortController.abort()
-  abortController = new AbortController()
-  showState('loading')
+  const controller = new AbortController()
+  abortController = controller
+
+  const keepContent = !els.packView.classList.contains('hidden')
+  if (keepContent) {
+    setBusy(true, { keepContent: true })
+  } else {
+    showState('loading')
+  }
+
+  const timer = setTimeout(() => {
+    controller.abort('timeout')
+  }, FETCH_TIMEOUT_MS)
 
   try {
     const res = await fetch(`/games/${encodeURIComponent(slug)}/packs/`, {
-      signal: abortController.signal
+      signal: controller.signal
     })
+    if (seq !== loadSeq) return
+
     const data = await res.json().catch(() => ({}))
+    if (seq !== loadSeq) return
+
     if (!res.ok) {
       throw new Error(data.error || `โหลดแพ็คไม่สำเร็จ (${res.status})`)
     }
+    setBusy(false)
     renderPacks(data)
   } catch (err) {
-    if (err.name === 'AbortError') return
+    if (seq !== loadSeq) return
+    if (err.name === 'AbortError') {
+      const timedOut =
+        controller.signal.reason === 'timeout' ||
+        String(controller.signal.reason || '').includes('timeout')
+      if (!timedOut) return
+      els.errorMessage.textContent =
+        'โหลดนานเกินไป (เกิน 45 วินาที) — ลองอีกครั้งหรือเลือกเกมอื่น'
+      setBusy(false)
+      showState('error')
+      return
+    }
     els.errorMessage.textContent = err.message || 'โหลดไม่สำเร็จ'
+    setBusy(false)
     showState('error')
+  } finally {
+    clearTimeout(timer)
   }
 }
 
