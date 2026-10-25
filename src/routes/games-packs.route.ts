@@ -1,6 +1,11 @@
 import { Elysia } from 'elysia'
 import { getGameBySlug } from '../games/registry'
 import {
+  AniimoInvalidUpstreamResponseError,
+  AniimoUpstreamUnavailableError,
+  fetchAniimoPacks
+} from '../services/aniimo-packs.service'
+import {
   DeltaForceGarenaInvalidUpstreamResponseError,
   DeltaForceGarenaUpstreamUnavailableError,
   fetchDeltaForceGarenaPacks
@@ -418,6 +423,20 @@ export const gamesPacksRoutes = new Elysia().get(
         throw error
       }
     } 
+
+    if (game.provider === 'aniimo-official') {
+      try {
+        return await fetchAniimoPacks()
+      } catch (error) {
+        if (error instanceof AniimoUpstreamUnavailableError) {
+          return status(502, { error: 'Upstream service unavailable' })
+        }
+        if (error instanceof AniimoInvalidUpstreamResponseError) {
+          return status(502, { error: 'Invalid upstream response' })
+        }
+        throw error
+      }
+    }
 
     if (game.provider === 'delta-force-garena') {
       try {
