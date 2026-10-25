@@ -121,9 +121,11 @@ function packPriceParts(pack) {
       ? pack.price_usd
       : (pack.prices?.USD ?? (pack.currency === 'USD' ? pack.price : null))
   const other =
-    pack.price != null && pack.currency && pack.currency !== 'THB' && pack.currency !== 'USD'
-      ? { amount: pack.price, currency: pack.currency }
-      : null
+    pack.store_price != null && pack.store_currency && pack.store_currency !== 'THB' && pack.store_currency !== 'USD'
+      ? { amount: pack.store_price, currency: pack.store_currency }
+      : pack.price != null && pack.currency && pack.currency !== 'THB' && pack.currency !== 'USD'
+        ? { amount: pack.price, currency: pack.currency }
+        : null
 
   return { thb, usd, other }
 }
@@ -164,10 +166,12 @@ function linkOrText(value) {
 function renderPackRow(pack) {
   const { thb, usd, other } = packPriceParts(pack)
   const priceHtml = [
-    `<span class="price-main">${escapeHtml(formatMoney(thb, 'THB'))}</span>`,
+    `<span class="price-main" title="${escapeHtml(thb == null ? pack.price_thb_null_reason ?? '' : '')}">${escapeHtml(formatMoney(thb, 'THB'))}</span>`,
     usd !== null && usd !== undefined
       ? `<span class="price-sub">${escapeHtml(formatMoney(usd, 'USD'))}</span>`
-      : '',
+      : pack.price_usd_null_reason
+        ? `<span class="price-sub" title="${escapeHtml(pack.price_usd_null_reason)}">USD —</span>`
+        : '',
     other
       ? `<span class="price-sub">${escapeHtml(formatMoney(other.amount, other.currency))}</span>`
       : ''
@@ -175,7 +179,9 @@ function renderPackRow(pack) {
 
   // Display like "5,000 + 580 (5,580)"; bonus null = official bonus source unavailable (never guessed).
   const amounts =
-    pack.bonusItemAmount === null || pack.bonus_available === false
+    pack.item_pack === true || pack.baseItemAmount === null
+      ? '—'
+      : pack.bonusItemAmount === null || pack.bonus_available === false
       ? `${formatNumber(pack.baseItemAmount)} + ? (bonus unavailable)`
       : Number(pack.bonusItemAmount) > 0
         ? `${formatNumber(pack.baseItemAmount)} + ${formatNumber(pack.bonusItemAmount)} (${formatNumber(pack.totalItemAmount)})`

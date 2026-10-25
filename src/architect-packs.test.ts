@@ -35,7 +35,7 @@ describe('architect land of exiles', () => {
     expect(body.game.name).toBe('Architect: Land of Exiles')
     const [web, ios] = body.categories
     expect(web.packs[0]).toMatchObject({ name: '495 Diamonds', baseItemAmount: 495, store_price: 150, store_currency: 'TWD', price_thb: null, price_usd: null, extras: ['AP +23'] })
-    expect(web.packs[0].price_thb_null_reason).toContain('No same-amount')
+    expect(web.packs[0].price_thb_null_reason).toContain('Same pack not in App Store TH')
     expect(web.packs[1]).toMatchObject({ baseItemAmount: 7200, store_price: 2000, price_thb: 2350, price_thb_source: 'apple-app-store-th', currency: 'THB' })
     expect(web.packs[1].price_usd_null_reason).toContain('404')
     expect(ios.packs.map((p: any) => p.price_thb)).toEqual([2350, 35])
@@ -44,6 +44,23 @@ describe('architect land of exiles', () => {
     mock(() => new Response(shopHtml), () => new Response(iap('7200 Diamonds', '$69.99')))
     const body = (await (await get('architect')).json()) as any
     expect(body.categories[0].packs[1]).toMatchObject({ price_usd: 69.99, price_usd_source: 'apple-app-store-us' })
+  })
+  it('fills USD from USD storefronts (KH) by name and shows item packs without amounts', async () => {
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.startsWith('https://atshop.drimage.com/')) return new Response(shopHtml)
+      if (url.startsWith('https://apps.apple.com/th/')) return new Response(thHtml + iap('Summon Coupon Luck Pack_G', '\u0E3F249.00'))
+      if (url.startsWith('https://apps.apple.com/kh/')) return new Response(iap('Summon Coupon Luck Pack_G', 'USD 7.99') + iap('S2 Weekly Blessing Pack_G', 'USD 24.99'))
+      if (url.startsWith('https://apps.apple.com/la/')) return new Response(iap('S2 Weekly Blessing Pack_G', 'USD 24.99'))
+      return new Response('nf', { status: 404 })
+    }) as unknown as typeof fetch
+    const body = (await (await get()).json()) as any
+    const ios = body.categories[1].packs
+    const luck = ios.find((p: any) => p.name === 'Summon Coupon Luck Pack_G')
+    expect(luck).toMatchObject({ price_thb: 249, price_usd: 7.99, price_usd_source: 'apple-app-store-kh', item_pack: true, baseItemAmount: null })
+    const s2 = ios.find((p: any) => p.name === 'S2 Weekly Blessing Pack_G')
+    expect(s2).toMatchObject({ price_thb: null, price_usd: 24.99 })
+    expect(s2.price_thb_null_reason).toContain('TH')
   })
   it('502 when web shop is down', async () => {
     mock(() => new Response('x', { status: 503 }))
