@@ -15,6 +15,10 @@ export const BLOODSTRIKE_TOPUP_URL =
 export const BLOODSTRIKE_PRODUCTS_API_URL =
   'https://pay.neteasegames.com/gameclub/products/bloodstrike?gc_client_version=1.13.55'
 
+/** Official bonus ("+N Gold") endpoint used by the top-up page. TH region, default NetEase Credit pay method. */
+export const BLOODSTRIKE_ACTIVITYS_API_URL =
+  'https://pay.neteasegames.com/gameclub/products/bloodstrike/activitys?gc_client_version=1.13.55&pay_method=gameclub_wallet&pay_type=NetEase+Credit_gameclub_wallet&alpha2=TH'
+
 const BROWSER_UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36'
 
@@ -30,6 +34,13 @@ export class BloodStrikeInvalidUpstreamResponseError extends Error {
     super(message)
     this.name = 'BloodStrikeInvalidUpstreamResponseError'
   }
+}
+
+/** RovPack with nullable bonus: null = official bonus source unavailable (never guessed). */
+export type BloodStrikePack = Omit<RovPack, 'bonusItemAmount'> & {
+  bonusItemAmount: number | null
+  bonus_available: boolean
+  bonus_source: string | null
 }
 
 type ParsedProduct = {
@@ -101,13 +112,35 @@ export function parseBloodStrikeProducts(payload: unknown): ParsedProduct[] {
   return out
 }
 
-function toPack(p: ParsedProduct, index: number): RovPack {
+/**
+ * Parse live bonus activities -> goodsid => bonus amount.
+ * Returns null when the payload is unusable (caller marks bonus unavailable).
+ */
+export function parseBloodStrikeBonuses(payload: unknown, nowSec = Date.now() / 1000): Map<string, number> | null {
+  if (!isRecord(payload) || payload.code !== '0000' || !isRecord(payload.data) || !Array.isArray(payload.data.list)) {
+    return null
+  }
+  const out = new Map<string, number>()
+  for (const a of payload.data.list) {
+    if (!isRecord(a) || typeof a.goodsid !== 'string') continue
+    if (!isFiniteNumber(a.marketing_free_amount) || a.marketing_free_amount <= 0) continue
+    if (a.alpha2 !== 'all' && a.alpha2 !== 'TH') continue
+    if (isFiniteNumber(a.expired_time) && a.expired_time < nowSec) continue
+    out.set(a.goodsid, Math.max(out.get(a.goodsid) ?? 0, a.marketing_free_amount))
+  }
+  return out
+}
+
+function toPack(p: ParsedProduct, index: number, bonuses: Map<string, number> | null): BloodStrikePack {
+  const bonus = bonuses === null ? null : p.isPass ? 0 : (bonuses.get(p.goodsid) ?? 0)
   return {
     id: p.amount > 0 ? p.amount : 900000 + index,
     name: p.name,
     baseItemAmount: p.amount,
-    bonusItemAmount: 0,
-    totalItemAmount: p.amount,
+    bonusItemAmount: bonus,
+    totalItemAmount: p.amount + (bonus ?? 0),
+    bonus_available: bonuses !== null,
+    bonus_source: bonuses === null ? null : 'netease-gameclub-activitys',
     price: p.priceThb,
     currency: 'THB',
     price_thb: p.priceThb,
@@ -118,10 +151,10 @@ function toPack(p: ParsedProduct, index: number): RovPack {
   }
 }
 
-function toResponse(products: ParsedProduct[]): RovPacksResponse {
+function toResponse(products: ParsedProduct[], bonuses: Map<string, number> | null): RovPacksResponse {
   const byUsd = (a: ParsedProduct, b: ParsedProduct) => a.priceUsd - b.priceUsd
-  const gold = products.filter((p) => !p.isPass).sort(byUsd).map(toPack)
-  const passes = products.filter((p) => p.isPass).sort(byUsd).map((p, i) => toPack(p, i))
+  const gold = products.filter((p) => !p.isPass).sort(byUsd).map((p, i) => toPack(p, i, bonuses))
+  const passes = products.filter((p) => p.isPass).sort(byUsd).map((p, i) => toPack(p, i, bonuses))
   const categories = [
     {
       id: 1,
@@ -141,7 +174,7 @@ function toResponse(products: ParsedProduct[]): RovPacksResponse {
     }
   ].filter((c) => c.packCount > 0)
 
-  return {
+  return ({
     game: {
       id: BLOODSTRIKE_APP_ID,
       slug: BLOODSTRIKE_SLUG,
@@ -163,10 +196,12 @@ function toResponse(products: ParsedProduct[]): RovPacksResponse {
     notes: [
       'Official NetEase GamesClub product API (same data as the official top-up page).',
       'USD = product base price; THB = local_price.TH.default (full list price, Thailand region).',
-      'Only permanent catalog items; time-limited events/bonus promos excluded. bonusItemAmount not included.',
+      'Only permanent catalog items; time-limited event products excluded.',
+      'Bonus source: ' + BLOODSTRIKE_ACTIVITYS_API_URL + (bonuses === null ? ' (UNAVAILABLE this fetch: bonus = null)' : ''),
+      'Bonus Gold = live marketing_free_amount from the official activitys API (TH, NetEase Credit; identical across TH pay methods when checked). If that call fails, bonusItemAmount = null and bonus_available = false.',
       'Live-fetch only; empty/unparseable upstream -> error (no static catalog).'
     ]
-  }
+  } as unknown) as RovPacksResponse
 }
 
 export async function fetchBloodStrikePacks(options?: {
@@ -202,5 +237,19 @@ export async function fetchBloodStrikePacks(options?: {
   if (products.length === 0) {
     throw new BloodStrikeInvalidUpstreamResponseError('No permanent products found')
   }
-  return toResponse(products)
+  const bonuses = await fetchBonuses(options?.signal)
+  return toResponse(products, bonuses)
+}
+
+async function fetchBonuses(signal?: AbortSignal): Promise<Map<string, number> | null> {
+  try {
+    const res = await fetch(BLOODSTRIKE_ACTIVITYS_API_URL, {
+      signal: signal ?? AbortSignal.timeout(15_000),
+      headers: { Accept: 'application/json', Referer: BLOODSTRIKE_TOPUP_URL, 'User-Agent': BROWSER_UA }
+    })
+    if (!res.ok) return null
+    return parseBloodStrikeBonuses(await res.json())
+  } catch {
+    return null
+  }
 }
