@@ -62,6 +62,39 @@ describe('architect land of exiles', () => {
     expect(s2).toMatchObject({ price_thb: null, price_usd: 24.99 })
     expect(s2.price_thb_null_reason).toContain('TH')
   })
+  it('converts TWD web tiers with live official FX (estimated) but keeps real App Store prices', async () => {
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.startsWith('https://atshop.drimage.com/')) return new Response(shopHtml)
+      if (url.startsWith('https://apps.apple.com/th/')) return new Response(thHtml)
+      if (url.startsWith('https://www.cbc.gov.tw/')) return new Response('<h3>NT$/US$ Closing Rate</h3><span class="date">2026-10-22</span><span class="info"><em>30.000</em></span>')
+      if (url.startsWith('https://www.ecb.europa.eu/')) return new Response("<Cube time='2026-10-23'><Cube currency='USD' rate='1.0'/><Cube currency='THB' rate='33.0'/></Cube>")
+      return new Response('nf', { status: 404 })
+    }) as unknown as typeof fetch
+    const body = (await (await get()).json()) as any
+    const [p495, p7200] = body.categories[0].packs
+    expect(p495).toMatchObject({ price_usd: 5, price_usd_estimated: true, price_thb: 165, price_thb_estimated: true, fx_date: expect.stringContaining('2026-10-2') })
+    expect(p495.price_thb_source).toStartWith('fx-converted (')
+    expect(p495.fx_source).toContain('cbc.gov.tw')
+    expect(p7200).toMatchObject({ price_thb: 2350, price_thb_source: 'apple-app-store-th', price_usd: 66.67, price_usd_estimated: true })
+    expect(p7200.price_thb_estimated).toBeUndefined()
+    expect(body.categories[1].packs[0].price_usd_estimated).toBeUndefined()
+  })
+  it('keeps THB/USD null with reason when FX fetch fails (still 200)', async () => {
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.startsWith('https://atshop.drimage.com/')) return new Response(shopHtml)
+      if (url.startsWith('https://apps.apple.com/th/')) return new Response(thHtml)
+      if (url.startsWith('https://www.cbc.gov.tw/')) return new Response('down', { status: 503 })
+      return new Response('nf', { status: 404 })
+    }) as unknown as typeof fetch
+    const res = await get()
+    expect(res.status).toBe(200)
+    const p = ((await res.json()) as any).categories[0].packs[0]
+    expect(p).toMatchObject({ price_thb: null, price_usd: null })
+    expect(p.price_usd_null_reason).toContain('FX fetch failed')
+    expect(p.price_thb_estimated).toBeUndefined()
+  })
   it('502 when web shop is down', async () => {
     mock(() => new Response('x', { status: 503 }))
     expect((await get()).status).toBe(502)

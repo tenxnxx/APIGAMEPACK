@@ -101,6 +101,36 @@ async function fetchIap(url: string, cur: 'THB' | 'USD', lang: string, signal?: 
   }
 }
 
+/** Live official FX (only for web shop TWD tiers without a real THB/USD price). */
+export const CBC_URL = 'https://www.cbc.gov.tw/en/mp-2.html'
+export const ECB_URL = 'https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml'
+export type ArchitectFx = { usd: { rate: number; date: string; source: string } | null; thb: { rate: number; date: string; source: string } | null; reasonUsd?: string; reasonThb?: string }
+export async function fetchArchitectFx(signal?: AbortSignal): Promise<ArchitectFx> {
+  const out: ArchitectFx = { usd: null, thb: null }
+  let ntdPerUsd: number | null = null, cbcDate = ''
+  try {
+    const r = await fetch(CBC_URL, { signal: signal ?? AbortSignal.timeout(15_000), headers: { 'User-Agent': UA } })
+    if (r.status !== 200) throw new Error('HTTP ' + r.status)
+    const m = (await r.text()).match(/NT\$\/US\$ Closing Rate<\/h3><span class="date">(\d{4}-\d{2}-\d{2})<\/span><span class="info"><em>([\d.]+)<\/em>/)
+    if (!m || !(Number(m[2]) > 0)) throw new Error('NT$/US$ closing rate not found')
+    ntdPerUsd = Number(m[2]); cbcDate = m[1]
+    out.usd = { rate: 1 / ntdPerUsd, date: cbcDate, source: 'Central Bank of the Republic of China (Taiwan) NT$/US$ closing rate ' + CBC_URL }
+  } catch (e) { out.reasonUsd = out.reasonThb = 'FX fetch failed (CBC Taiwan NT$/US$): ' + (e instanceof Error ? e.message : String(e)) }
+  if (ntdPerUsd) {
+    try {
+      const r = await fetch(ECB_URL, { signal: signal ?? AbortSignal.timeout(15_000) })
+      if (r.status !== 200) throw new Error('HTTP ' + r.status)
+      const x = await r.text()
+      const d = x.match(/time='(\d{4}-\d{2}-\d{2})'/)
+      const usd = x.match(/currency='USD' rate='([\d.]+)'/), thb = x.match(/currency='THB' rate='([\d.]+)'/)
+      if (!d || !usd || !thb) throw new Error('USD/THB reference rate not found')
+      const thbPerUsd = Number(thb[1]) / Number(usd[1])
+      out.thb = { rate: thbPerUsd / ntdPerUsd, date: cbcDate + ' (TWD/USD) / ' + d[1] + ' (USD/THB)', source: 'CBC Taiwan NT$/US$ ' + CBC_URL + ' x ECB euro reference rates (THB/USD cross) ' + ECB_URL }
+    } catch (e) { out.reasonThb = 'FX fetch failed (ECB reference rates): ' + (e instanceof Error ? e.message : String(e)) }
+  }
+  return out
+}
+
 export async function fetchArchitectPacks(options?: { signal?: AbortSignal }): Promise<RovPacksResponse> {
   let shop: { status: number; text: string }
   try {
@@ -147,6 +177,7 @@ export async function fetchArchitectPacks(options?: { signal?: AbortSignal }): P
     return pack
   }
 
+  const notesExtra: string[] = []
   const webPacks = rows.map((r, i) =>
     fill({
       id: i + 1, name: r.name,
@@ -156,6 +187,29 @@ export async function fetchArchitectPacks(options?: { signal?: AbortSignal }): P
       price_thb: null, price_usd: null, price_thb_source: null, price_usd_source: null, price: r.price, currency: r.currency
     } as unknown as ArchitectPack, r)
   )
+  if (webPacks.some((p) => p.store_currency === 'TWD' && (p.price_thb === null || p.price_usd === null))) {
+    const fx = await fetchArchitectFx(options?.signal)
+    for (const p of webPacks) {
+      if (p.store_currency !== 'TWD' || p.store_price === null) continue
+      for (const [f, q, why] of [['thb', fx.thb, fx.reasonThb], ['usd', fx.usd, fx.reasonUsd]] as const) {
+        if ((p as any)['price_' + f] !== null) continue
+        if (!q) { (p as any)['price_' + f + '_null_reason'] = (p as any)['price_' + f + '_null_reason'] + '; ' + why; continue }
+        ;(p as any)['price_' + f] = Math.round(p.store_price * q.rate * 100) / 100
+        ;(p as any)['price_' + f + '_source'] = 'fx-converted (' + q.source + ')'
+        ;(p as any)['price_' + f + '_estimated'] = true
+        ;(p as any)['fx_rate_' + f] = q.rate
+        ;(p as any)['price_' + f + '_note'] = 'Estimated: converted from TWD ' + p.store_price + ' at live official rate; actual charge depends on payment provider'
+        delete (p as any)['price_' + f + '_null_reason']
+        ;(p as any).fx_source ??= q.source; (p as any).fx_date ??= q.date; (p as any)['fx_date_' + f] = q.date
+      }
+      ;(p as any).prices = { THB: p.price_thb, USD: p.price_usd, TWD: p.store_price }
+      p.price = p.price_thb ?? p.price_usd ?? p.store_price ?? 0
+      p.currency = p.price_thb !== null ? 'THB' : p.price_usd !== null ? 'USD' : p.store_currency ?? ''
+      ;(p as any).fx_rate = { TWD_THB: fx.thb?.rate ?? null, TWD_USD: fx.usd?.rate ?? null }
+    }
+    if (fx.usd || fx.thb) notesExtra.push('Web shop THB/USD are ESTIMATES converted from TWD with live official rates: ' + [fx.usd && 'TWD->USD ' + fx.usd.rate.toFixed(6) + ' (' + fx.usd.date + ', ' + fx.usd.source + ')', fx.thb && 'TWD->THB ' + fx.thb.rate.toFixed(6) + ' (' + fx.thb.date + ', ' + fx.thb.source + ')'].filter(Boolean).join('; '))
+    if (fx.reasonUsd || fx.reasonThb) notesExtra.push('FX: ' + [fx.reasonUsd, fx.reasonThb].filter(Boolean).join('; '))
+  }
   const appRows: IapRow[] = [...(th.rows ?? [])]
   for (const r of us.rows ?? []) if (!appRows.some((x) => x.name.toLowerCase() === r.name.toLowerCase())) appRows.push({ ...r, price: NaN })
   const appPacks = appRows.map((r, i) =>
@@ -177,6 +231,7 @@ export async function fetchArchitectPacks(options?: { signal?: AbortSignal }): P
     'Main: official DRIMAGE Web Shop (public HTML, prices TWD via MyCard). Extras (AP / MILEAGE) are separate points, not diamonds.',
     'THB/USD from official Apple App Store TH/US IAP list matched by diamond amount (no conversion); null + *_null_reason when no match.'
   ]
+  notes.push(...notesExtra)
   if (!th.rows) notes.push('App Store TH: ' + th.reason)
   if (us.reason) notes.push('App Store USD storefronts: ' + us.reason)
   notes.push('Tried for THB/USD on web shop tiers: DRIMAGE web shop ?lang=th/currency/region/country params and product pages (TWD only); official site links only to this web shop; App Store TH/US/KH/LA (+ iTunes lookup); no official THB/USD price for 495-33,000 diamond web tiers.')

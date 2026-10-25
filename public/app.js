@@ -166,14 +166,17 @@ function linkOrText(value) {
 function renderPackRow(pack) {
   const { thb, usd, other } = packPriceParts(pack)
   const priceHtml = [
-    `<span class="price-main" title="${escapeHtml(thb == null ? pack.price_thb_null_reason ?? '' : '')}">${escapeHtml(formatMoney(thb, 'THB'))}</span>`,
+    `<span class="price-main" title="${escapeHtml(thb == null ? pack.price_thb_null_reason ?? '' : pack.price_thb_estimated ? pack.price_thb_source ?? '' : '')}">${pack.price_thb_estimated ? '≈ ' : ''}${escapeHtml(formatMoney(thb, 'THB'))}</span>`,
     usd !== null && usd !== undefined
-      ? `<span class="price-sub">${escapeHtml(formatMoney(usd, 'USD'))}</span>`
+      ? `<span class="price-sub" title="${escapeHtml(pack.price_usd_estimated ? pack.price_usd_source ?? '' : '')}">${pack.price_usd_estimated ? '≈ ' : ''}${escapeHtml(formatMoney(usd, 'USD'))}</span>`
       : pack.price_usd_null_reason
         ? `<span class="price-sub" title="${escapeHtml(pack.price_usd_null_reason)}">USD —</span>`
         : '',
     other
       ? `<span class="price-sub">${escapeHtml(formatMoney(other.amount, other.currency))}</span>`
+      : ''
+    ,pack.price_thb_estimated || pack.price_usd_estimated
+      ? `<span class="price-sub" style="font-size:0.75em;opacity:0.75" title="${escapeHtml(pack.fx_source ?? '')}">ประมาณ (แปลงจาก TWD) · ${escapeHtml(String(pack.fx_source ?? '').startsWith('CBC') || String(pack.fx_source ?? '').startsWith('Central') ? 'CBC Taiwan + ECB' : pack.fx_source ?? '')} · ${escapeHtml(pack.fx_date ?? '')}</span>`
       : ''
   ].join('')
 
