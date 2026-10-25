@@ -1,4 +1,4 @@
-﻿import type { RovPack, RovPacksResponse } from '../types/rov'
+import type { RovPack, RovPacksResponse } from '../types/rov'
 import { isFiniteNumber, isRecord } from '../lib/guards'
 
 /**
@@ -12,6 +12,49 @@ export const ANIIMO_GAME_ID = 999002
 export const ANIIMO_SHOP_URL = 'https://www.aniimo.com/store/en/'
 export const ANIIMO_STORE_API_URL = 'https://worldx-store-coin.kingsgroupgames.com/api/store/init'
 const ANIIMO_STORE_BODY = { server_id: 1, game_id: ANIIMO_GAME_ID, game_project: 'worldx_global', source: 'web' }
+
+export const ANIIMO_APPSTORE_TH_URL = 'https://apps.apple.com/th/app/aniimo/id6759098797'
+export const ANIIMO_APPSTORE_US_URL = 'https://apps.apple.com/us/app/aniimo/id6759098797'
+
+export type AppStoreIapRow = { name: string; price: number }
+
+/** Parse "In-App Purchases" text pairs from an App Store product page. */
+export function parseAniimoAppStoreIap(html: string, currency: 'THB' | 'USD'): AppStoreIapRow[] {
+  const out: AppStoreIapRow[] = []
+  const re = /<div class="text-pair[^"]*"><span>([^<]+)<\/span>\s*<span>([^<]+)<\/span>/g
+  for (const m of html.matchAll(re)) {
+    const name = m[1].replace(/\s+/g, ' ').trim()
+    const raw = m[2].trim()
+    if (currency === 'THB' ? !raw.includes('\u0E3F') : !raw.startsWith('$')) continue
+    const price = Number(raw.replace(/[^0-9.]/g, ''))
+    if (!Number.isFinite(price) || out.some((r) => r.name === name)) continue
+    out.push({ name, price })
+  }
+  return out
+}
+
+/** Match key: crystal amount, or pass/handbook kind. */
+export function aniimoIapKey(name: string): string | null {
+  const n = name.toLowerCase()
+  const c = n.match(/([\d,]+)\s*lumin crystals?/)
+  if (c) return 'c' + Number(c[1].replace(/,/g, ''))
+  if (n.includes('monthly pass')) return 'monthly'
+  if (n.includes('advanced')) return 'advanced'
+  if (n.includes('collector')) return 'collector'
+  return null
+}
+
+async function fetchIap(url: string, currency: 'THB' | 'USD', lang: string, signal?: AbortSignal): Promise<Map<string, number>> {
+  const res = await fetch(url, { signal: signal ?? AbortSignal.timeout(20_000), headers: { 'User-Agent': BROWSER_UA, 'Accept-Language': lang, Accept: 'text/html' } })
+  if (!res.ok) throw new Error('HTTP ' + res.status)
+  const map = new Map<string, number>()
+  for (const r of parseAniimoAppStoreIap(await res.text(), currency)) {
+    const k = aniimoIapKey(r.name)
+    if (k && !map.has(k)) map.set(k, r.price)
+  }
+  if (map.size === 0) throw new Error('no IAP rows')
+  return map
+}
 
 const BROWSER_UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36'
@@ -36,13 +79,22 @@ export class AniimoInvalidUpstreamResponseError extends Error {
   }
 }
 
-export type AniimoPack = Omit<RovPack, 'bonusItemAmount'> & {
+export type AniimoPack = Omit<RovPack, 'bonusItemAmount' | 'price_thb' | 'price_usd' | 'price_thb_source' | 'price_usd_source'> & {
   bonusItemAmount: number | null
   bonus_available: boolean
   bonus_source: string | null
   first_purchase_bonus: number | null
   first_purchase_of_month_price: number | null
   product_id: string
+  iap_key?: string | null
+  store_price?: number
+  store_currency?: string
+  price_thb?: number | null
+  price_usd?: number | null
+  price_thb_source?: string | null
+  price_usd_source?: string | null
+  price_thb_null_reason?: string
+  price_usd_null_reason?: string
 }
 
 function benefit(p: Record<string, unknown>, type: string): Record<string, unknown> | null {
@@ -76,6 +128,7 @@ export function parseAniimoProducts(payload: unknown): { currency: string; count
     const id = Number(p.package_id)
     const usd = p.currency === 'USD' ? price : null
     const thb = p.currency === 'THB' ? price : null
+    const key = coin > 0 ? 'c' + coin : aniimoIapKey(NAME_EN[desc] ?? desc)
     packs.push({
       id: Number.isFinite(id) ? id : packs.length + 1,
       name: coin > 0 ? `${coin} Lumin Crystals` : NAME_EN[desc] ?? desc,
@@ -87,6 +140,9 @@ export function parseAniimoProducts(payload: unknown): { currency: string; count
       first_purchase_bonus: first && isFiniteNumber(first.coin) ? first.coin : null,
       first_purchase_of_month_price: month && isFiniteNumber(month.discount_price) ? month.discount_price : null,
       product_id: String(p.product_id ?? ''),
+      iap_key: key,
+      store_price: price,
+      store_currency: p.currency,
       price,
       currency: p.currency,
       ...(thb !== null ? { price_thb: thb } : {}),
@@ -121,6 +177,38 @@ export async function fetchAniimoPacks(options?: { signal?: AbortSignal }): Prom
   }
   const { currency, country, packs, kind } = parseAniimoProducts(payload)
   if (packs.length === 0) throw new AniimoInvalidUpstreamResponseError('No products')
+  const extraNotes: string[] = []
+  const sources: Record<string, string> = { store: ANIIMO_STORE_API_URL }
+  for (const [cur, url, lang] of [['THB', ANIIMO_APPSTORE_TH_URL, 'th-TH,th;q=0.9'], ['USD', ANIIMO_APPSTORE_US_URL, 'en-US,en;q=0.9']] as const) {
+    const field = cur === 'THB' ? 'price_thb' : 'price_usd'
+    const srcField = (field + '_source') as 'price_thb_source' | 'price_usd_source'
+    const reasonField = (field + '_null_reason') as 'price_thb_null_reason' | 'price_usd_null_reason'
+    if (currency === cur) {
+      sources[cur.toLowerCase()] = ANIIMO_STORE_API_URL
+      continue // official web shop already returned this currency
+    }
+    let map: Map<string, number> | null = null
+    let err = ''
+    try {
+      map = await fetchIap(url, cur, lang, options?.signal)
+      sources[cur.toLowerCase()] = url
+    } catch (e) {
+      err = e instanceof Error ? e.message : String(e)
+      extraNotes.push(`App Store ${cur} unavailable (${err}); ${field} null.`)
+    }
+    for (const p of packs) {
+      const v = map && p.iap_key ? map.get(p.iap_key) : undefined
+      p[field] = v ?? null
+      p[srcField] = v !== undefined ? 'apple-app-store-' + (cur === 'THB' ? 'th' : 'us') : null
+      if (v === undefined) p[reasonField] = map ? 'Not listed on App Store ' + (cur === 'THB' ? 'TH' : 'US') + ' IAP list (Apple shows top items only)' : 'App Store fetch failed: ' + err
+      ;(p as any).prices = { THB: p.price_thb ?? null, USD: p.price_usd ?? null }
+    }
+  }
+  for (const p of packs) {
+    if (p.price_thb != null) { p.price = p.price_thb; p.currency = 'THB' }
+    else if (p.price_usd != null) { p.price = p.price_usd; p.currency = 'USD' }
+    delete p.iap_key
+  }
   const msg = 'Live from Aniimo official shop (no fallback)'
   const cats = [
     { id: 1, name: 'Lumin Crystals', packs: packs.filter((p) => kind.get(p.id) === 1) },
@@ -134,13 +222,15 @@ export async function fetchAniimoPacks(options?: { signal?: AbortSignal }): Prom
     summary: { categoryCount: cats.length, packCount: packs.length },
     fetchedAt: new Date().toISOString(),
     source: ANIIMO_SHOP_URL,
-    sources: { [currency.toLowerCase() || 'price']: ANIIMO_STORE_API_URL },
+    sources,
     notes: [
       'Official Aniimo web shop API (same data as https://www.aniimo.com/store/en/).',
-      `Currency picked by upstream from server IP: ${currency || 'unknown'} (country ${country ?? 'unknown'}). Other currency is null (never converted).`,
+      `Official shop currency picked by upstream from server IP: ${currency || 'unknown'} (country ${country ?? 'unknown'}); request fields for country/currency are ignored upstream.`,
       'Price = original_price (full price). Bonus = level_normal_rebate coin (standard bonus); null if missing.',
       'first_purchase_bonus = level_first_rebate (first-time double); first_purchase_of_month_price = month_first_discount price (shown, not used as price).',
-      'Live-fetch only; failure -> 502 (no static catalog).'
+      'THB/USD: from official shop when it returns that currency; otherwise official Apple App Store TH/US IAP list matched by crystal amount / pass name (no conversion). store_price/store_currency = raw official-shop price.',
+      'Live-fetch only; failure -> 502 (no static catalog).',
+      ...extraNotes
     ]
   } as unknown) as RovPacksResponse
 }
