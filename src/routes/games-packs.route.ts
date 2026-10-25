@@ -6,6 +6,11 @@ import {
   fetchArchitectPacks
 } from '../services/architect-packs.service'
 import {
+  BleachInvalidUpstreamResponseError,
+  BleachUpstreamUnavailableError,
+  fetchBleachPacks
+} from '../services/bleach-packs.service'
+import {
   AniimoInvalidUpstreamResponseError,
   AniimoUpstreamUnavailableError,
   fetchAniimoPacks
@@ -428,6 +433,20 @@ export const gamesPacksRoutes = new Elysia().get(
         throw error
       }
     } 
+
+    if (game.provider === 'bleach-appstore') {
+      try {
+        return await fetchBleachPacks(game.slug)
+      } catch (error) {
+        if (error instanceof BleachUpstreamUnavailableError) {
+          return status(502, { error: 'Upstream service unavailable' })
+        }
+        if (error instanceof BleachInvalidUpstreamResponseError) {
+          return status(502, { error: 'Invalid upstream response' })
+        }
+        throw error
+      }
+    }
 
     if (game.provider === 'architect-drimage') {
       try {
