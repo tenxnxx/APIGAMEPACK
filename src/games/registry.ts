@@ -21,6 +21,7 @@ export type GameProvider =
   | 'rtnw-oneone-ph'
   | 'rtnw-oneone-sg'
   | 'bloodstrike-netease'
+  | 'delta-force-garena'
 export type GameRegistryEntry = {
   appId: number
   slug: string
@@ -180,6 +181,8 @@ export const GAME_REGISTRY: Record<string, GameRegistryEntry> = {
     slug: 'yulgang-w',
     provider: 'yulgang-w-appstore'
   },
+  'delta-force-garena': { appId: 100151, slug: 'delta-force-garena', provider: 'delta-force-garena' },
+  'deltaforce-garena': { appId: 100151, slug: 'delta-force-garena', provider: 'delta-force-garena' },
   'blood-strike': {
     appId: 1637059453,
     slug: 'blood-strike',
@@ -322,6 +325,7 @@ const GAME_DISPLAY_NAMES: Record<string, string> = {
   'wuthering-waves': 'Wuthering Waves',
   'yulgang-w': 'Yulgang W',
   'blood-strike': 'Blood Strike',
+  'delta-force-garena': 'Delta Force (Garena)',
   'ragnarok-the-new-world': 'Ragnarok: The New World (TH)',
   'ragnarok-the-new-world-my': 'Ragnarok: The New World (MY)',
   'ragnarok-the-new-world-id': 'Ragnarok: The New World (ID)',

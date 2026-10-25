@@ -1,6 +1,11 @@
 import { Elysia } from 'elysia'
 import { getGameBySlug } from '../games/registry'
 import {
+  DeltaForceGarenaInvalidUpstreamResponseError,
+  DeltaForceGarenaUpstreamUnavailableError,
+  fetchDeltaForceGarenaPacks
+} from '../services/delta-force-garena-packs.service'
+import {
   BloodStrikeInvalidUpstreamResponseError,
   BloodStrikeUpstreamUnavailableError,
   fetchBloodStrikePacks
@@ -413,6 +418,20 @@ export const gamesPacksRoutes = new Elysia().get(
         throw error
       }
     } 
+
+    if (game.provider === 'delta-force-garena') {
+      try {
+        return await fetchDeltaForceGarenaPacks()
+      } catch (error) {
+        if (error instanceof DeltaForceGarenaUpstreamUnavailableError) {
+          return status(502, { error: 'Upstream service unavailable' })
+        }
+        if (error instanceof DeltaForceGarenaInvalidUpstreamResponseError) {
+          return status(502, { error: 'Invalid upstream response' })
+        }
+        throw error
+      }
+    }
 
     if (game.provider === 'bloodstrike-netease') {
       try {
