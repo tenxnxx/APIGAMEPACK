@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="th">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>APIGAME Pack — ดูราคาแพ็คเกม</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Syne:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="atmosphere" aria-hidden="true"></div>
+    <header class="site-header">
+      <p class="brand">APIGAME Pack</p>
+      <h1>ดูราคาแพ็คเกม</h1>
+      <p class="lede">เลือกเกมจากรายการ แล้วดูแพ็ค ราคา และรายละเอียดครบจาก API</p>
+    </header>
+
+    <main class="layout">
+      <aside class="games-panel" aria-label="รายชื่อเกม">
+        <div class="panel-head">
+          <h2>เกม</h2>
+          <span id="game-count" class="meta">กำลังโหลด…</span>
+        </div>
+        <label class="game-search">
+          <span class="sr-only">ค้นหาเกม</span>
+          <input
+            id="game-search"
+            type="search"
+            placeholder="ค้นหาชื่อเกม, slug, provider…"
+            autocomplete="off"
+            spellcheck="false"
+          />
+        </label>
+        <ul id="game-list" class="game-list"></ul>
+      </aside>
+
+      <section class="detail-panel" aria-live="polite">
+        <div id="empty-state" class="empty-state">
+          <p>เลือกเกมทางซ้ายเพื่อโหลดแพ็คราคา</p>
+        </div>
+
+        <div id="loading-state" class="state hidden">
+          <p class="pulse">กำลังโหลดแพ็ค…</p>
+        </div>
+
+        <div id="error-state" class="state error hidden">
+          <p id="error-message">โหลดไม่สำเร็จ</p>
+          <button type="button" id="retry-btn" class="btn">ลองอีกครั้ง</button>
+        </div>
+
+        <article id="pack-view" class="pack-view hidden">
+          <header class="pack-header">
+            <div class="pack-title-row">
+              <img id="game-icon" class="game-icon hidden" alt="" />
+              <div>
+                <h2 id="game-name"></h2>
+                <p id="game-meta" class="meta"></p>
+              </div>
+            </div>
+            <dl id="summary" class="summary"></dl>
+          </header>
+
+          <div id="notes" class="notes hidden"></div>
+          <div id="sources" class="sources hidden"></div>
+          <div id="categories" class="categories"></div>
+        </article>
+      </section>
+    </main>
+
+    <script src="/app.js" defer></script>
+  </body>
+</html>

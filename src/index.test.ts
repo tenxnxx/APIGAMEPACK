@@ -105,6 +105,53 @@ describe('GET /health', () => {
   })
 })
 
+describe('GET /games/', () => {
+  it('returns canonical games without alias duplicates', async () => {
+    const response = await app.handle(new Request('http://localhost/games/'))
+    expect(response.status).toBe(200)
+    const body = await response.json()
+    expect(body.count).toBe(body.games.length)
+    expect(body.games.length).toBeGreaterThan(0)
+
+    const slugs = body.games.map((g: { slug: string }) => g.slug)
+    expect(slugs).toContain('whiteout-survival')
+    expect(slugs).not.toContain('wos')
+    expect(slugs).toContain('pubg-mobile')
+    expect(slugs).not.toContain('pubgm')
+
+    for (const game of body.games) {
+      expect(game).toMatchObject({
+        slug: expect.any(String),
+        name: expect.any(String),
+        provider: expect.any(String),
+        appId: expect.any(Number)
+      })
+    }
+  })
+})
+
+describe('GET /', () => {
+  it('serves the pack viewer HTML', async () => {
+    const response = await app.handle(new Request('http://localhost/'))
+    expect(response.status).toBe(200)
+    expect(response.headers.get('cache-control')).toBe('no-cache')
+    const html = await response.text()
+    expect(html).toContain('APIGAME Pack')
+    expect(html).toContain('ดูราคาแพ็คเกม')
+  })
+})
+
+describe('GET /styles.css and /app.js', () => {
+  it('serves assets with short public cache', async () => {
+    const css = await app.handle(new Request('http://localhost/styles.css'))
+    const js = await app.handle(new Request('http://localhost/app.js'))
+    expect(css.status).toBe(200)
+    expect(js.status).toBe(200)
+    expect(css.headers.get('cache-control')).toBe('public, max-age=3600')
+    expect(js.headers.get('cache-control')).toBe('public, max-age=3600')
+  })
+})
+
 describe('GET /games/rov/packs/', () => {
   const appStoreThHtml = `<html><script type="application/json">{"shelfMapping":{"information":{"title":"In-App Purchases","items_V3":[
     {"leadingText":"100-Diamond Bundle","trailingText":"฿35.00"},
@@ -809,8 +856,8 @@ describe('GET /games/cod-mobile/packs/', () => {
       error: 'Upstream service unavailable'
     })
   })
-})
-
+})
+
 describe('GET /games/:slug/packs/ unknown slug', () => {
   it('returns 404 for an unknown game slug', async () => {
     const response = await app.handle(

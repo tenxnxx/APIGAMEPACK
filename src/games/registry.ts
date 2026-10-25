@@ -287,3 +287,82 @@ export const GAME_REGISTRY: Record<string, GameRegistryEntry> = {
 export function getGameBySlug(slug: string): GameRegistryEntry | undefined {
   return GAME_REGISTRY[slug]
 }
+
+/** Human-readable labels for UI; keyed by canonical registry slug. */
+const GAME_DISPLAY_NAMES: Record<string, string> = {
+  rov: 'RoV',
+  freefire: 'Free Fire',
+  'delta-force': 'Delta Force',
+  'fc-online-m': 'FC Online M',
+  'cod-mobile': 'Call of Duty: Mobile',
+  'last-war': 'Last War',
+  kingshot: 'Kingshot',
+  'whiteout-survival': 'Whiteout Survival',
+  'whiteout-survival-24buym': 'Whiteout Survival (24buym)',
+  'pubg-mobile': 'PUBG Mobile',
+  efootball: 'eFootball (iOS)',
+  'clash-of-critters': 'Clash of Critters',
+  'mobile-legends': 'Mobile Legends',
+  'lastwar-24buym': 'Last War (24buym)',
+  'cookierun-classic': 'Cookie Run: Classic',
+  'cookierun-classic-24buym': 'Cookie Run: Classic (24buym)',
+  heartopia: 'Heartopia',
+  roblox: 'Roblox',
+  'wuthering-waves': 'Wuthering Waves',
+  'yulgang-w': 'Yulgang W',
+  'ragnarok-the-new-world': 'Ragnarok: The New World (TH)',
+  'ragnarok-the-new-world-my': 'Ragnarok: The New World (MY)',
+  'ragnarok-the-new-world-id': 'Ragnarok: The New World (ID)',
+  'ragnarok-the-new-world-ph': 'Ragnarok: The New World (PH)',
+  'ragnarok-the-new-world-sg': 'Ragnarok: The New World (SG)'
+}
+
+export type ListedGame = {
+  slug: string
+  name: string
+  provider: GameProvider
+  appId: number
+}
+
+function titleizeSlug(slug: string): string {
+  return slug
+    .split('-')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ')
+}
+
+/**
+ * Unique games for the UI picker. Alias keys (e.g. wos → whiteout-survival)
+ * collapse to one row; prefer the registry key that matches entry.slug.
+ */
+export function listCanonicalGames(): ListedGame[] {
+  const groups = new Map<
+    string,
+    { keys: string[]; entry: GameRegistryEntry }
+  >()
+
+  for (const [key, entry] of Object.entries(GAME_REGISTRY)) {
+    const id = `${entry.slug}::${entry.provider}`
+    const group = groups.get(id)
+    if (!group) {
+      groups.set(id, { keys: [key], entry })
+    } else {
+      group.keys.push(key)
+    }
+  }
+
+  const games: ListedGame[] = []
+  for (const { keys, entry } of groups.values()) {
+    const slug = keys.includes(entry.slug)
+      ? entry.slug
+      : [...keys].sort((a, b) => a.length - b.length || a.localeCompare(b))[0]!
+    games.push({
+      slug,
+      name: GAME_DISPLAY_NAMES[entry.slug] ?? titleizeSlug(entry.slug),
+      provider: entry.provider,
+      appId: entry.appId
+    })
+  }
+
+  return games.sort((a, b) => a.name.localeCompare(b.name, 'en'))
+}
