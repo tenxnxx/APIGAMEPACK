@@ -1,6 +1,11 @@
 import { Elysia } from 'elysia'
 import { getGameBySlug } from '../games/registry'
 import {
+  ArchitectInvalidUpstreamResponseError,
+  ArchitectUpstreamUnavailableError,
+  fetchArchitectPacks
+} from '../services/architect-packs.service'
+import {
   AniimoInvalidUpstreamResponseError,
   AniimoUpstreamUnavailableError,
   fetchAniimoPacks
@@ -423,6 +428,20 @@ export const gamesPacksRoutes = new Elysia().get(
         throw error
       }
     } 
+
+    if (game.provider === 'architect-drimage') {
+      try {
+        return await fetchArchitectPacks()
+      } catch (error) {
+        if (error instanceof ArchitectUpstreamUnavailableError) {
+          return status(502, { error: 'Upstream service unavailable' })
+        }
+        if (error instanceof ArchitectInvalidUpstreamResponseError) {
+          return status(502, { error: 'Invalid upstream response' })
+        }
+        throw error
+      }
+    }
 
     if (game.provider === 'aniimo-official') {
       try {

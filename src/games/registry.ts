@@ -23,6 +23,7 @@ export type GameProvider =
   | 'bloodstrike-netease'
   | 'delta-force-garena'
   | 'aniimo-official'
+  | 'architect-drimage'
 export type GameRegistryEntry = {
   appId: number
   slug: string
@@ -185,6 +186,8 @@ export const GAME_REGISTRY: Record<string, GameRegistryEntry> = {
   'delta-force-garena': { appId: 100151, slug: 'delta-force-garena', provider: 'delta-force-garena' },
   'deltaforce-garena': { appId: 100151, slug: 'delta-force-garena', provider: 'delta-force-garena' },
   aniimo: { appId: 999002, slug: 'aniimo', provider: 'aniimo-official' },
+  'architect-land-of-exiles': { appId: 6698862298, slug: 'architect-land-of-exiles', provider: 'architect-drimage' },
+  architect: { appId: 6698862298, slug: 'architect-land-of-exiles', provider: 'architect-drimage' },
   'blood-strike': {
     appId: 1637059453,
     slug: 'blood-strike',
@@ -328,6 +331,7 @@ const GAME_DISPLAY_NAMES: Record<string, string> = {
   'yulgang-w': 'Yulgang W',
   'blood-strike': 'Blood Strike',
   aniimo: 'Aniimo',
+  'architect-land-of-exiles': 'Architect: Land of Exiles',
   'delta-force-garena': 'Delta Force (Garena)',
   'ragnarok-the-new-world': 'Ragnarok: The New World (TH)',
   'ragnarok-the-new-world-my': 'Ragnarok: The New World (MY)',
