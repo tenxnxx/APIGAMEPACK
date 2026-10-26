@@ -1,5 +1,5 @@
 ﻿import { afterEach, describe, expect, it } from 'bun:test'
-import { fetchBloodStrikePacks, parseBloodStrikeBonuses } from './services/bloodstrike-packs.service'
+import { fetchBloodStrikePacks, parseBloodStrikeBonuses, parseBloodStrikeLimitedItems } from './services/bloodstrike-packs.service'
 
 const originalFetch = globalThis.fetch
 afterEach(() => {
@@ -96,5 +96,42 @@ describe('Blood Strike bonus Gold', () => {
       bonus_source: null,
       price_thb: 1990
     })
+  })
+})
+
+describe('Blood Strike limited passes & bundles', () => {
+  const lim = (goodsid: string, sub: string, name: string, usd: string, thb: number, eff: number, exp: number, detail = '') => ({
+    goodsid, sub_item: sub, goodsinfo: name, currency: 'USD', price: usd, status: 1, permanent_display_flag: 0,
+    effective_time: eff, expired_time: exp, extra: { local_price: lp(thb, Number(usd)) },
+    multi_language: { default: { default: { goodsinfo: name, goods_detail: detail + '<br />Please wait while the page is loading' } } }
+  })
+  const payload = { code: '0000', data: [
+    product('g83naxx1ena.USD.gold100.ally', '100 Golds', '0.9900', 39),
+    lim('g83us_199newbiepass', '100013', 'Level-Up Pass', '1.9900', 79, 0, 2147483647, 'Unlock Level-Up Pass'),
+    lim('x.099package', '1', 'Lucky Bag Week', '0.9900', 39, 100, 2000, 'Lucky Bag Week'),
+    lim('x.099package', '1', 'Lucky Bag Week', '0.9900', 39, 100, 2000, 'dup'),
+    lim('x.099package', '2', 'Old Season Pass', '0.9900', 39, 100, 500),
+    lim('x.099package', '3', 'Halloween Bag', '0.9900', 39, 5000, 9000),
+    lim('g83us_099deal', '9', '099deal', '0.9900', 39, 0, 2147483647)
+  ] }
+  it('keeps active, named, deduped items; counts upcoming; skips deals and expired', () => {
+    const r = parseBloodStrikeLimitedItems(payload, 1000)
+    expect(r.active.map((x) => x.name)).toEqual(['Level-Up Pass', 'Lucky Bag Week'])
+    expect(r.active[0]).toMatchObject({ kind: 'Pass', priceThb: 79, priceUsd: 1.99, description: 'Unlock Level-Up Pass' })
+    expect(r.upcoming).toBe(1)
+  })
+  it('category 3 as item packs with THB+USD and null Gold amounts with reasons', async () => {
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/activitys')) return new Response('down', { status: 503 })
+      return new Response(JSON.stringify({ ...payload, data: payload.data.map((p: any) => ({ ...p, effective_time: p.effective_time === 100 ? 0 : p.effective_time, expired_time: p.expired_time === 2000 ? 2147483000 : p.expired_time })) }), { status: 200 })
+    }) as unknown as typeof fetch
+    const body = (await fetchBloodStrikePacks()) as any
+    const cat = body.categories.find((c: any) => c.id === 3)
+    expect(cat.name).toContain('Passes & Bundles')
+    const lvl = cat.packs.find((p: any) => p.name === 'Level-Up Pass')
+    expect(lvl).toMatchObject({ item_pack: true, price_thb: 79, price_usd: 1.99, baseItemAmount: null, totalItemAmount: null })
+    expect(lvl.base_null_reason).toBeTruthy()
+    expect(lvl.description).toContain('Unlock Level-Up Pass')
   })
 })
