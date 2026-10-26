@@ -1,4 +1,9 @@
 import {
+  DraconiaInvalidUpstreamResponseError,
+  DraconiaUpstreamUnavailableError,
+  fetchDraconiaPacks
+} from '../services/draconia-saga-packs.service'
+import {
   DestinyRisingInvalidUpstreamResponseError,
   DestinyRisingUpstreamUnavailableError,
   fetchDestinyRisingPacks
@@ -458,6 +463,20 @@ export const gamesPacksRoutes = new Elysia().get(
         throw error
       }
     } 
+
+    if (game.provider === 'draconia-sugarfun') {
+      try {
+        return await fetchDraconiaPacks()
+      } catch (error) {
+        if (error instanceof DraconiaUpstreamUnavailableError) {
+          return status(502, { error: 'Upstream service unavailable' })
+        }
+        if (error instanceof DraconiaInvalidUpstreamResponseError) {
+          return status(502, { error: 'Invalid upstream response' })
+        }
+        throw error
+      }
+    }
 
     if (game.provider === 'destiny-rising-netease') {
       try {
