@@ -1,6 +1,11 @@
 import { Elysia } from 'elysia'
 import { getGameBySlug } from '../games/registry'
 import {
+  AceRacerInvalidUpstreamResponseError,
+  AceRacerUpstreamUnavailableError,
+  fetchAceRacerPacks
+} from '../services/aceracer-packs.service'
+import {
   ArchitectInvalidUpstreamResponseError,
   ArchitectUpstreamUnavailableError,
   fetchArchitectPacks
@@ -433,6 +438,20 @@ export const gamesPacksRoutes = new Elysia().get(
         throw error
       }
     } 
+
+    if (game.provider === 'aceracer-netease') {
+      try {
+        return await fetchAceRacerPacks()
+      } catch (error) {
+        if (error instanceof AceRacerUpstreamUnavailableError) {
+          return status(502, { error: 'Upstream service unavailable' })
+        }
+        if (error instanceof AceRacerInvalidUpstreamResponseError) {
+          return status(502, { error: 'Invalid upstream response' })
+        }
+        throw error
+      }
+    }
 
     if (game.provider === 'bleach-appstore') {
       try {

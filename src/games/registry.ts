@@ -25,6 +25,7 @@ export type GameProvider =
   | 'aniimo-official'
   | 'architect-drimage'
   | 'bleach-appstore'
+  | 'aceracer-netease'
 export type GameRegistryEntry = {
   appId: number
   slug: string
@@ -189,6 +190,8 @@ export const GAME_REGISTRY: Record<string, GameRegistryEntry> = {
   aniimo: { appId: 999002, slug: 'aniimo', provider: 'aniimo-official' },
   'architect-land-of-exiles': { appId: 6698862298, slug: 'architect-land-of-exiles', provider: 'architect-drimage' },
   architect: { appId: 6698862298, slug: 'architect-land-of-exiles', provider: 'architect-drimage' },
+  'ace-racer': { appId: 1593356371, slug: 'ace-racer', provider: 'aceracer-netease' },
+  aceracer: { appId: 1593356371, slug: 'ace-racer', provider: 'aceracer-netease' },
   'bleach-brave-souls': { appId: 1003168863, slug: 'bleach-brave-souls', provider: 'bleach-appstore' },
   'bleach': { appId: 1003168863, slug: 'bleach-brave-souls', provider: 'bleach-appstore' },
   'bleach-bs': { appId: 1003168863, slug: 'bleach-brave-souls', provider: 'bleach-appstore' },
@@ -343,6 +346,7 @@ const GAME_DISPLAY_NAMES: Record<string, string> = {
   'blood-strike': 'Blood Strike',
   aniimo: 'Aniimo',
   'architect-land-of-exiles': 'Architect: Land of Exiles',
+  'ace-racer': 'Ace Racer',
   'bleach-brave-souls': 'BLEACH: Brave Souls',
   'bleach-soul-resonance': 'BLEACH: Soul Resonance',
   'bleach-mirrors-high': 'BLEACH Mirrors High',
