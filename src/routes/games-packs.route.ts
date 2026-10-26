@@ -1,3 +1,8 @@
+import {
+  TsubasaInvalidUpstreamResponseError,
+  TsubasaUpstreamUnavailableError,
+  fetchTsubasaPacks
+} from '../services/tsubasa-packs.service'
 import { Elysia } from 'elysia'
 import { getGameBySlug } from '../games/registry'
 import {
@@ -443,6 +448,20 @@ export const gamesPacksRoutes = new Elysia().get(
         throw error
       }
     } 
+
+    if (game.provider === 'tsubasa-klab') {
+      try {
+        return await fetchTsubasaPacks()
+      } catch (error) {
+        if (error instanceof TsubasaUpstreamUnavailableError) {
+          return status(502, { error: 'Upstream service unavailable' })
+        }
+        if (error instanceof TsubasaInvalidUpstreamResponseError) {
+          return status(502, { error: 'Invalid upstream response' })
+        }
+        throw error
+      }
+    }
 
     if (game.provider === 'cabal-combo') {
       try {
