@@ -31,6 +31,7 @@ export type GameProvider =
   | 'cfl-midasbuy'
   | 'destiny-rising-netease'
   | 'draconia-sugarfun'
+  | 'dnm-classic-mobapay'
 export type GameRegistryEntry = {
   appId: number
   slug: string
@@ -195,6 +196,9 @@ export const GAME_REGISTRY: Record<string, GameRegistryEntry> = {
   aniimo: { appId: 999002, slug: 'aniimo', provider: 'aniimo-official' },
   'architect-land-of-exiles': { appId: 6698862298, slug: 'architect-land-of-exiles', provider: 'architect-drimage' },
   architect: { appId: 6698862298, slug: 'architect-land-of-exiles', provider: 'architect-drimage' },
+  'dragon-nest-m-classic': { appId: 6743824718, slug: 'dragon-nest-m-classic', provider: 'dnm-classic-mobapay' },
+  'dnm-classic': { appId: 6743824718, slug: 'dragon-nest-m-classic', provider: 'dnm-classic-mobapay' },
+  'dragon-nest-m': { appId: 6743824718, slug: 'dragon-nest-m-classic', provider: 'dnm-classic-mobapay' },
   'draconia-saga': { appId: 6476590090, slug: 'draconia-saga', provider: 'draconia-sugarfun' },
   draconia: { appId: 6476590090, slug: 'draconia-saga', provider: 'draconia-sugarfun' },
   'draconia-saga-sea': { appId: 6476590090, slug: 'draconia-saga', provider: 'draconia-sugarfun' },
@@ -372,6 +376,7 @@ const GAME_DISPLAY_NAMES: Record<string, string> = {
   'crossfire-legends': 'Crossfire: Legends',
   'destiny-rising': 'Destiny: Rising',
   'draconia-saga': 'Draconia Saga',
+  'dragon-nest-m-classic': 'Dragon Nest M: Classic',
   'bleach-brave-souls': 'BLEACH: Brave Souls',
   'bleach-soul-resonance': 'BLEACH: Soul Resonance',
   'bleach-mirrors-high': 'BLEACH Mirrors High',

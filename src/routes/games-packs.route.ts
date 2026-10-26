@@ -1,4 +1,9 @@
 import {
+  DnmInvalidUpstreamResponseError,
+  DnmUpstreamUnavailableError,
+  fetchDnmPacks
+} from '../services/dnm-classic-packs.service'
+import {
   DraconiaInvalidUpstreamResponseError,
   DraconiaUpstreamUnavailableError,
   fetchDraconiaPacks
@@ -463,6 +468,20 @@ export const gamesPacksRoutes = new Elysia().get(
         throw error
       }
     } 
+
+    if (game.provider === 'dnm-classic-mobapay') {
+      try {
+        return await fetchDnmPacks()
+      } catch (error) {
+        if (error instanceof DnmUpstreamUnavailableError) {
+          return status(502, { error: 'Upstream service unavailable' })
+        }
+        if (error instanceof DnmInvalidUpstreamResponseError) {
+          return status(502, { error: 'Invalid upstream response' })
+        }
+        throw error
+      }
+    }
 
     if (game.provider === 'draconia-sugarfun') {
       try {
