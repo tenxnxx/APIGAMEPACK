@@ -1,4 +1,9 @@
 import {
+  CflInvalidUpstreamResponseError,
+  CflUpstreamUnavailableError,
+  fetchCflPacks
+} from '../services/cfl-packs.service'
+import {
   TsubasaInvalidUpstreamResponseError,
   TsubasaUpstreamUnavailableError,
   fetchTsubasaPacks
@@ -448,6 +453,20 @@ export const gamesPacksRoutes = new Elysia().get(
         throw error
       }
     } 
+
+    if (game.provider === 'cfl-midasbuy') {
+      try {
+        return await fetchCflPacks()
+      } catch (error) {
+        if (error instanceof CflUpstreamUnavailableError) {
+          return status(502, { error: 'Upstream service unavailable' })
+        }
+        if (error instanceof CflInvalidUpstreamResponseError) {
+          return status(502, { error: 'Invalid upstream response' })
+        }
+        throw error
+      }
+    }
 
     if (game.provider === 'tsubasa-klab') {
       try {
