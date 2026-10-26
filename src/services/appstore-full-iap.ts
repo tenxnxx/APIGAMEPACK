@@ -72,6 +72,8 @@ async function getPage(cc: string, id: string, l: string | null, offset: number,
     const ra = Number(r.headers.get('retry-after'))
     await sleep(Number.isFinite(ra) && ra > 0 ? Math.min(ra, 5) * 1000 : 800 * (attempt + 1))
   }
+  // Apple answers 404 (not an empty page) for an offset just past the end when the count is a multiple of 10.
+  if (r.status === 404 && offset > 0) return []
   if (!r.ok) throw new Error('App Store IAP API HTTP ' + r.status)
   const rows = parseTopInAppsPage(await r.json())
   if (!rows) throw new Error('App Store IAP API: bad shape')
@@ -134,6 +136,34 @@ export async function appStoreFetch(url: string, init?: RequestInit): Promise<Re
   const headers = new Headers(r.headers)
   headers.set(APPSTORE_SOURCE_HEADER, 'appstore-page')
   return new Response(r.body, { status: r.status, statusText: r.statusText, headers })
+}
+
+/** True when appStoreFetch served the full list (catalog API) rather than the top-10 page. */
+export const isFullIapResponse = (r: Response) => r.headers.get(APPSTORE_SOURCE_HEADER) === 'amp-api'
+
+/** Wording for a missing App Store match, honest about which list was checked. */
+export const iapScope = (full: boolean | undefined) =>
+  full
+    ? 'full App Store IAP list checked; not sold under this exact name on this storefront'
+    : 'only the App Store page top 10 was available (full-list catalog API unavailable)'
+
+/** Name key for matching: Unicode-normalised, × -> x, thousands separators removed, case/space-insensitive. */
+export const iapNameKey = (n: string) =>
+  n.normalize('NFKC').toLowerCase().replace(/[\u00D7\u2715\u2716]/g, 'x').replace(/(\d),(?=\d{3}\b)/g, '$1').replace(/\s+/g, ' ').trim()
+
+/**
+ * Look up a price by name without guessing: if the same name appears at more than one price, it is ambiguous.
+ */
+export function lookupUnambiguous<T extends { name: string; price: number }>(
+  rows: T[] | null | undefined,
+  name: string
+): { row: T } | { ambiguous: number[] } | null {
+  if (!rows) return null
+  const k = iapNameKey(name)
+  const hits = rows.filter((r) => iapNameKey(r.name) === k)
+  if (!hits.length) return null
+  const prices = [...new Set(hits.map((h) => h.price))]
+  return prices.length === 1 ? { row: hits[0] } : { ambiguous: prices.sort((a, b) => a - b) }
 }
 
 export const APPSTORE_FULL_IAP_NOTE =

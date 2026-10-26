@@ -65,7 +65,7 @@ describe('appstore-full-iap', () => {
       n++
       if (n === 1) return new Response('{}', { status: 429, headers: { 'retry-after': '0' } })
       return new Response(JSON.stringify({ data: [item(0)] }), { status: 200 })
-    }) as typeof fetch
+    }) as unknown as typeof fetch
     const rows = await fetchAppStoreFullIap('th', '1', null)
     expect(rows.length).toBe(1)
     expect(n).toBe(2)
@@ -89,12 +89,72 @@ describe('appstore-full-iap', () => {
     const r = await appStoreFetch('https://apps.apple.com/th/app/id1', {})
     expect(r.headers.get(APPSTORE_SOURCE_HEADER)).toBe('appstore-page')
     expect(await r.text()).toContain('page top10')
-    expect(calls.at(-1)).toBe('https://apps.apple.com/th/app/id1')
+    expect(calls[calls.length - 1]).toBe('https://apps.apple.com/th/app/id1')
   })
 
   test('non App Store URLs pass through', async () => {
     const calls = mockApi(0)
     await appStoreFetch('https://example.com/a', {})
     expect(calls).toEqual(['https://example.com/a'])
+  })
+})
+import { iapNameKey, lookupUnambiguous, iapScope, isFullIapResponse } from './services/appstore-full-iap'
+import { parseBleachIap } from './services/bleach-packs.service'
+
+describe('appstore-full-iap matching helpers', () => {
+  test('404 just past the end (count multiple of 10) ends paging', async () => {
+    let n = 0
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      n++
+      const off = Number(new URL(String(input)).searchParams.get('offset'))
+      if (off >= 30) return new Response('{}', { status: 404 })
+      return new Response(JSON.stringify({ data: Array.from({ length: 10 }, (_, i) => item(off + i)) }), { status: 200 })
+    }) as unknown as typeof fetch
+    const rows = await fetchAppStoreFullIap('th', '1593356371', 'en-GB')
+    expect(rows.length).toBe(30)
+    expect(n).toBe(4)
+  })
+
+  test('404 on the first page is still an error (falls back)', async () => {
+    globalThis.fetch = (async () => new Response('{}', { status: 404 })) as unknown as typeof fetch
+    await expect(fetchAppStoreFullIap('us', '1', null)).rejects.toThrow('404')
+  })
+
+  test('iapNameKey normalises ×, thousands separators, case and spaces', () => {
+    expect(iapNameKey('Premium Spiritual Jade ×1,980')).toBe(iapNameKey('premium  spiritual jade x1980'))
+    expect(iapNameKey('Premium Spiritual Jade ×12,800')).toBe(iapNameKey('Premium Spiritual Jade ×12800'))
+    expect(iapNameKey('Limited Recruitment Ticket ×10')).toBe('limited recruitment ticket x10')
+  })
+
+  test('lookupUnambiguous: same price duplicates ok, different prices ambiguous', () => {
+    const rows = [
+      { name: 'Private Training', price: 17.99 },
+      { name: 'Private Training', price: 17.99 },
+      { name: 'Extreme Training', price: 19.99 },
+      { name: 'Extreme Training', price: 10 }
+    ]
+    expect(lookupUnambiguous(rows, 'private training')).toEqual({ row: rows[0] })
+    expect(lookupUnambiguous(rows, 'Extreme Training')).toEqual({ ambiguous: [10, 19.99] })
+    expect(lookupUnambiguous(rows, 'Nope')).toBeNull()
+    expect(lookupUnambiguous(null, 'x')).toBeNull()
+  })
+
+  test('iapScope wording and source detection', () => {
+    expect(iapScope(true)).toContain('full App Store IAP list checked')
+    expect(iapScope(false)).toContain('top 10')
+    expect(isFullIapResponse(new Response('', { headers: { 'x-appstore-source': 'amp-api' } }))).toBe(true)
+    expect(isFullIapResponse(new Response(''))).toBe(false)
+  })
+
+  test('bleach parser reads KH/LA "USD x.xx" and keeps × in names', () => {
+    const html = fullIapToPageHtml([
+      { id: '1', name: 'Premium Spiritual Jade ×1,980', price: 29.99, priceFormatted: 'USD 29.99', currency: 'USD' },
+      { id: '2', name: 'Gacha Box', price: 0.99, priceFormatted: 'USD 0.99', currency: 'USD' }
+    ])
+    const rows = parseBleachIap(html, 'USD')
+    expect(rows).toEqual([
+      { name: 'Premium Spiritual Jade ×1,980', amount: 1980, price: 29.99 },
+      { name: 'Gacha Box', amount: null, price: 0.99 }
+    ] as any)
   })
 })

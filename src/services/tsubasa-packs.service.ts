@@ -1,4 +1,4 @@
-import { appStoreFetch, APPSTORE_FULL_IAP_NOTE } from './appstore-full-iap'
+import { appStoreFetch, APPSTORE_FULL_IAP_NOTE, isFullIapResponse, iapScope } from './appstore-full-iap'
 import type { RovPacksResponse } from '../types/rov'
 import { parseAppStoreIapRows, type IapRow } from './architect-packs.service'
 
@@ -55,12 +55,12 @@ export function parseTsubasaShop(html: string): TsubasaShopProduct[] {
   return out
 }
 
-async function fetchIap(url: string, cur: 'THB' | 'USD', lang: string, signal?: AbortSignal): Promise<{ rows: IapRow[] | null; reason?: string }> {
+async function fetchIap(url: string, cur: 'THB' | 'USD', lang: string, signal?: AbortSignal): Promise<{ rows: IapRow[] | null; reason?: string; full?: boolean }> {
   try {
     const r = await appStoreFetch(url, { signal: signal ?? AbortSignal.timeout(20_000), redirect: 'follow', headers: { 'User-Agent': UA, 'Accept-Language': lang, Accept: 'text/html' } })
     if (r.status !== 200) return { rows: null, reason: `App Store HTTP ${r.status}` }
     const rows = parseAppStoreIapRows(await r.text(), cur)
-    return rows.length ? { rows } : { rows: null, reason: 'No IAP rows on App Store page' }
+    return rows.length ? { rows, full: isFullIapResponse(r) } : { rows: null, reason: 'No IAP rows on App Store page' }
   } catch (e) {
     return { rows: null, reason: 'App Store fetch failed: ' + (e instanceof Error ? e.message : String(e)) }
   }
@@ -121,8 +121,8 @@ export async function fetchTsubasaPacks(options?: { signal?: AbortSignal }): Pro
       price: t ? t.price : u ? u.price : 0, currency: t ? 'THB' : u ? 'USD' : ''
     }
     pack.bonus_null_reason = 'App Store lists name and price only (no bonus info)'
-    if (!t) pack.price_thb_null_reason = th.rows ? 'Not in App Store TH IAP list (Apple web shows top 10 only)' : 'App Store TH: ' + th.reason
-    if (!u) pack.price_usd_null_reason = us.rows ? 'Not in App Store US IAP list (Apple web shows top 10 only)' : 'App Store US: ' + us.reason
+    if (!t) pack.price_thb_null_reason = th.rows ? `Not in App Store TH IAP list (${iapScope(th.full)})` : 'App Store TH: ' + th.reason
+    if (!u) pack.price_usd_null_reason = us.rows ? `Not in App Store US IAP list (${iapScope(us.full)})` : 'App Store US: ' + us.reason
     pack.prices = { THB: pack.price_thb, USD: pack.price_usd }
     return pack
   })

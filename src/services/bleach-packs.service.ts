@@ -1,4 +1,4 @@
-import { appStoreFetch, APPSTORE_FULL_IAP_NOTE } from './appstore-full-iap'
+import { appStoreFetch, APPSTORE_FULL_IAP_NOTE, isFullIapResponse, iapScope, iapNameKey, lookupUnambiguous } from './appstore-full-iap'
 import type { RovPacksResponse } from '../types/rov'
 import { parseAppStoreIapRows as parseRaw, type IapRow, type ArchitectPack } from './architect-packs.service'
 
@@ -63,7 +63,19 @@ export function bleachAmount(name: string): number | null {
 export function parseBleachIap(html: string, cur: 'THB' | 'USD'): IapRow[] {
   return parseRaw(html, cur).map((r) => ({ ...r, amount: bleachAmount(r.name) }))
 }
-const key = (n: string) => n.toLowerCase().replace(/\s+/g, ' ').trim()
+const key = iapNameKey
+type UsdRes = ReadonlyArray<readonly [string, { rows: IapRow[] | null; full?: boolean }]>
+/** USD by exact (normalised) name, first storefront that has it; same name at several prices = ambiguous (no guess). */
+function usdLookup(usdRes: UsdRes, name: string): { row: IapRow & { storefront: string } } | { ambiguous: number[]; sf: string } | null {
+  for (const [sf, r] of usdRes) {
+    const h = lookupUnambiguous(r.rows, name)
+    if (h) return 'row' in h ? { row: { ...h.row, storefront: sf } } : { ambiguous: h.ambiguous, sf }
+  }
+  return null
+}
+const ambReason = (a: { ambiguous: number[]; sf: string }) =>
+  `Same name sold at several prices on App Store ${a.sf.toUpperCase()} (USD ${a.ambiguous.join(' / ')}); not matched to avoid guessing`
+const usdAllFull = (usdRes: UsdRes) => usdRes.some(([, r]) => r.rows) && usdRes.every(([, r]) => !r.rows || r.full)
 
 async function fetchIap(url: string, cur: 'THB' | 'USD', lang: string, signal?: AbortSignal) {
   try {
@@ -72,7 +84,7 @@ async function fetchIap(url: string, cur: 'THB' | 'USD', lang: string, signal?: 
     if (r.status === 404) return { rows: null as IapRow[] | null, reason: 'Not listed on this storefront (HTTP 404)', status: 404 }
     if (r.status !== 200) return { rows: null, reason: `App Store HTTP ${r.status}`, status: r.status }
     const rows = parseBleachIap(text, cur)
-    return rows.length ? { rows, status: 200 } : { rows: null, reason: 'No IAP rows on App Store page', status: 200 }
+    return rows.length ? { rows, status: 200, full: isFullIapResponse(r) } : { rows: null, reason: 'No IAP rows on App Store page', status: 200 }
   } catch (e) {
     return { rows: null, reason: 'App Store fetch failed: ' + (e instanceof Error ? e.message : String(e)), status: 0 }
   }
@@ -95,14 +107,15 @@ export async function fetchBleachPacks(slug: string, options?: { signal?: AbortS
   const usdReasons: string[] = []
   for (const [sf, r] of usdRes) {
     if (!r.rows) { usdReasons.push(sf.toUpperCase() + ': ' + r.reason); continue }
-    for (const row of r.rows) if (!usd.some((x) => key(x.name) === key(row.name))) usd.push({ ...row, storefront: sf })
+    for (const row of r.rows) usd.push({ ...row, storefront: sf })
   }
   const names: IapRow[] = [...th.rows]
   for (const r of usd) if (!names.some((x) => key(x.name) === key(r.name))) names.push(r)
 
   const packs = names.map((r, i) => {
-    const t = th.rows!.find((x) => key(x.name) === key(r.name))
-    const u = usd.find((x) => key(x.name) === key(r.name))
+    const t = i < th.rows!.length ? r : null // TH rows keep their own price (duplicates included)
+    const uh = usdLookup(usdRes, r.name)
+    const u = uh && 'row' in uh ? uh.row : null
     const amt = r.amount
     const p = {
       id: i + 1, name: r.name,
@@ -114,15 +127,15 @@ export async function fetchBleachPacks(slug: string, options?: { signal?: AbortS
       price_usd: u ? u.price : null, price_usd_source: u ? `apple-app-store-${u.storefront}` : null,
       price: t ? t.price : u ? u.price : 0, currency: t ? 'THB' : u ? 'USD' : ''
     } as unknown as ArchitectPack
-    if (!t) p.price_thb_null_reason = 'Same pack not in App Store TH IAP list (Apple web shows top 10 only); no official web THB store'
-    if (!u) p.price_usd_null_reason = usd.length ? 'Same pack not in App Store USD storefront IAP lists (top 10 only)' + (usdReasons.length ? ' [' + usdReasons.join('; ') + ']' : '') : usdReasons.join('; ') || 'unavailable'
+    if (!t) p.price_thb_null_reason = `Same pack not in App Store TH IAP list (${iapScope(th.full)}); no official web THB store`
+    if (!u) p.price_usd_null_reason = uh && 'ambiguous' in uh ? ambReason(uh) : usd.length ? `Same pack not in App Store USD storefront IAP lists (${iapScope(usdAllFull(usdRes))})` + (usdReasons.length ? ' [' + usdReasons.join('; ') + ']' : '') : usdReasons.join('; ') || 'unavailable'
     ;(p as any).prices = { THB: p.price_thb, USD: p.price_usd }
     return p
   })
   const categories = [{ id: 1, name: `App Store (iOS IAP: TH THB / ${g.usd.map((x) => x[0].toUpperCase()).join('-')} USD)`, packs, status: 0, message: 'Live (no fallback catalog)', packCount: packs.length }]
   const notes = [
     `Publisher: ${g.publisher}. Main: official Apple App Store TH IAP list (live, real THB). USD from official App Store USD storefronts. No FX conversion; null + *_null_reason when no match.`,
-    'Apple web shows only the top 10 IAP items per storefront, so some packs exist in only one currency.',
+    'Matching is by exact pack name (Unicode-normalised, × = x, thousands separators ignored). A name sold at several prices on one storefront is left null rather than guessed.',
     ...g.extraNotes
   ]
   if (usdReasons.length) notes.push('USD storefronts: ' + usdReasons.join('; '))
@@ -179,17 +192,17 @@ export async function fetchBleachSoulResonancePacks(options?: { signal?: AbortSi
   const usdReasons: string[] = []
   for (const [sf, r] of usdRes) {
     if (!r.rows) { usdReasons.push(sf.toUpperCase() + ': ' + r.reason); continue }
-    for (const row of r.rows) if (!usd.some((x) => key(x.name) === key(row.name))) usd.push({ ...row, storefront: sf })
+    for (const row of r.rows) usd.push({ ...row, storefront: sf })
   }
-  const usdFor = (name: string) => usd.find((x) => key(x.name) === key(name))
-  const usdNull = 'Official Nuverse web shop has no USD region (TH/SG/MY/PH/ID only; US/KH/LA "goods not found"); App Store USD storefronts (KH/LA/US-Crunchyroll) show top 10 only and this pack is not among them'
+  const usdNull = `Official Nuverse web shop has no USD region (TH/SG/MY/PH/ID only; US/KH/LA "goods not found"); not in App Store USD storefront IAP lists KH/LA/US-Crunchyroll (${iapScope(usdAllFull(usdRes))})`
 
   const webPacks = goods.map((p, i) => {
     const isCur = p.goods_type === 2 && typeof p.coins === 'number'
     const base = isCur ? (bleachAmount(p.product_name) ?? p.coins!) : null
     const bonus = isCur ? Number(p.uptopresent_details?.present_coin_num ?? 0) : null
     const first = p.firstsave_details?.present_coin_num ? Number(p.firstsave_details.present_coin_num) : 0
-    const u = usdFor(p.product_name)
+    const uh = usdLookup(usdRes, p.product_name)
+    const u = uh && 'row' in uh ? uh.row : null
     const price = p.price / 100
     const pack = {
       id: i + 1, name: p.local_product_name || p.product_name, product_id: p.product_id,
@@ -204,15 +217,16 @@ export async function fetchBleachSoulResonancePacks(options?: { signal?: AbortSi
       price_usd: u ? u.price : null, price_usd_source: u ? `apple-app-store-${u.storefront}` : null,
       price: price, currency: p.currency_type
     } as any
-    if (!u) pack.price_usd_null_reason = usdNull
+    if (!u) pack.price_usd_null_reason = uh && 'ambiguous' in uh ? ambReason(uh) : usdNull
     pack.prices = { THB: pack.price_thb, USD: pack.price_usd }
     return pack
   })
   const appRows: IapRow[] = [...(th.rows ?? [])]
   for (const r of usd) if (!appRows.some((x) => key(x.name) === key(r.name))) appRows.push(r)
   const appPacks = appRows.map((r, i) => {
-    const t = th.rows?.find((x) => key(x.name) === key(r.name))
-    const u = usdFor(r.name)
+    const t = th.rows && i < th.rows.length ? r : null // TH rows keep their own price (duplicates included)
+    const uh = usdLookup(usdRes, r.name)
+    const u = uh && 'row' in uh ? uh.row : null
     const w = goods.find((x) => key(x.product_name) === key(r.name))
     const pack = {
       id: 1001 + i, name: r.name,
@@ -224,8 +238,8 @@ export async function fetchBleachSoulResonancePacks(options?: { signal?: AbortSi
       price_usd: u ? u.price : null, price_usd_source: u ? `apple-app-store-${u.storefront}` : null,
       price: t ? t.price : u ? u.price : 0, currency: t ? 'THB' : u ? 'USD' : ''
     } as any
-    if (!t) pack.price_thb_null_reason = th.rows ? 'Not in App Store TH IAP list (Apple web shows top 10 only)' : th.reason
-    if (!u) pack.price_usd_null_reason = 'Not in App Store USD storefront IAP lists (top 10 only)'
+    if (!t) pack.price_thb_null_reason = th.rows ? `Not in App Store TH IAP list (${iapScope(th.full)})` : th.reason
+    if (!u) pack.price_usd_null_reason = uh && 'ambiguous' in uh ? ambReason(uh) : `Not in App Store USD storefront IAP lists (${iapScope(usdAllFull(usdRes))})`
     pack.prices = { THB: pack.price_thb, USD: pack.price_usd }
     return pack
   })

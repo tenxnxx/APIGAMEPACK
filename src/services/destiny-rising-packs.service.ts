@@ -1,4 +1,4 @@
-import { appStoreFetch, APPSTORE_FULL_IAP_NOTE } from './appstore-full-iap'
+import { appStoreFetch, APPSTORE_FULL_IAP_NOTE, isFullIapResponse, iapScope } from './appstore-full-iap'
 import type { RovPacksResponse } from '../types/rov'
 import { parseAppStoreIapRows, type IapRow } from './architect-packs.service'
 
@@ -43,12 +43,12 @@ async function getJson(url: string, signal?: AbortSignal): Promise<any> {
   try { return await r.json() } catch { throw new DestinyRisingInvalidUpstreamResponseError('Non-JSON response') }
 }
 
-async function fetchIap(url: string, cur: 'THB' | 'USD', lang: string, signal?: AbortSignal): Promise<{ rows: IapRow[] | null; reason?: string }> {
+async function fetchIap(url: string, cur: 'THB' | 'USD', lang: string, signal?: AbortSignal): Promise<{ rows: IapRow[] | null; reason?: string; full?: boolean }> {
   try {
     const r = await appStoreFetch(url, { signal: signal ?? AbortSignal.timeout(20_000), redirect: 'follow', headers: { 'User-Agent': UA, 'Accept-Language': lang, Accept: 'text/html' } })
     if (r.status !== 200) return { rows: null, reason: `App Store HTTP ${r.status}` }
     const rows = parseAppStoreIapRows(await r.text(), cur)
-    return rows.length ? { rows } : { rows: null, reason: 'No IAP rows on App Store page' }
+    return rows.length ? { rows, full: isFullIapResponse(r) } : { rows: null, reason: 'No IAP rows on App Store page' }
   } catch (e) {
     return { rows: null, reason: 'App Store fetch failed: ' + (e instanceof Error ? e.message : String(e)) }
   }
@@ -83,7 +83,7 @@ export async function fetchDestinyRisingPacks(options?: { signal?: AbortSignal }
     return rows.find((x) => (amt !== null ? silverAmt(x.name) === amt : key(x.name) === key(name)))
   }
   const thReason = (n: string) => th.rows
-    ? `Official NetEase store has no THB for Destiny: Rising; "${n}" not in App Store TH IAP list (Apple web shows top 10 only)`
+    ? `Official NetEase store has no THB for Destiny: Rising; "${n}" not in App Store TH IAP list (${iapScope(th.full)})`
     : 'Official NetEase store has no THB; App Store TH: ' + th.reason
 
   const webPacks = prods.map((p, i) => {
@@ -123,8 +123,8 @@ export async function fetchDestinyRisingPacks(options?: { signal?: AbortSignal }
       price_usd: u ? u.price : null, price_usd_source: u ? 'apple-app-store-us' : null,
       price: t ? t.price : u ? u.price : 0, currency: t ? 'THB' : u ? 'USD' : ''
     }
-    if (!t) pack.price_thb_null_reason = th.rows ? 'Not in App Store TH IAP list (top 10 only)' : 'App Store TH: ' + th.reason
-    if (!u) pack.price_usd_null_reason = us.rows ? 'Not in App Store US IAP list (top 10 only)' : 'App Store US: ' + us.reason
+    if (!t) pack.price_thb_null_reason = th.rows ? `Not in App Store TH IAP list (${iapScope(th.full)})` : 'App Store TH: ' + th.reason
+    if (!u) pack.price_usd_null_reason = us.rows ? `Not in App Store US IAP list (${iapScope(us.full)})` : 'App Store US: ' + us.reason
     if (base === null) pack.base_null_reason = 'Bundle/pass item; contents not itemised on App Store'
     pack.prices = { THB: pack.price_thb, USD: pack.price_usd }
     return pack

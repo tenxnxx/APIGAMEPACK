@@ -1,4 +1,4 @@
-import { appStoreFetch, APPSTORE_FULL_IAP_NOTE } from './appstore-full-iap'
+import { appStoreFetch, APPSTORE_FULL_IAP_NOTE, isFullIapResponse, iapScope } from './appstore-full-iap'
 import type { RovPack, RovPacksResponse } from '../types/rov'
 
 /**
@@ -85,18 +85,18 @@ export function parseAppStoreIapRows(html: string, currency: 'THB' | 'USD'): Iap
   return out
 }
 
-async function fetchText(url: string, lang: string, signal?: AbortSignal): Promise<{ status: number; text: string }> {
+async function fetchText(url: string, lang: string, signal?: AbortSignal): Promise<{ status: number; text: string; full: boolean }> {
   const r = await appStoreFetch(url, { signal: signal ?? AbortSignal.timeout(20_000), headers: { 'User-Agent': UA, 'Accept-Language': lang, Accept: 'text/html' } })
-  return { status: r.status, text: await r.text() }
+  return { status: r.status, text: await r.text(), full: isFullIapResponse(r) }
 }
 
-async function fetchIap(url: string, cur: 'THB' | 'USD', lang: string, signal?: AbortSignal): Promise<{ rows: IapRow[] | null; reason?: string }> {
+async function fetchIap(url: string, cur: 'THB' | 'USD', lang: string, signal?: AbortSignal): Promise<{ rows: IapRow[] | null; reason?: string; full?: boolean }> {
   try {
     const r = await fetchText(url, lang, signal)
     if (r.status === 404) return { rows: null, reason: `Game not listed on App Store ${cur === 'THB' ? 'TH' : 'US'} (HTTP 404)` }
     if (r.status !== 200) return { rows: null, reason: `App Store HTTP ${r.status}` }
     const rows = parseAppStoreIapRows(r.text, cur)
-    return rows.length ? { rows } : { rows: null, reason: 'No IAP rows on App Store page' }
+    return rows.length ? { rows, full: r.full } : { rows: null, reason: 'No IAP rows on App Store page' }
   } catch (e) {
     return { rows: null, reason: 'App Store fetch failed: ' + (e instanceof Error ? e.message : String(e)) }
   }
@@ -123,7 +123,8 @@ export async function fetchArchitectPacks(options?: { signal?: AbortSignal }): P
         if (!r.rows) { reasons.push(sf.toUpperCase() + ': ' + r.reason); continue }
         for (const row of r.rows) if (!rows.some((x) => x.name.toLowerCase() === row.name.toLowerCase())) rows.push({ ...row, storefront: sf })
       }
-      return rows.length ? { rows, reason: reasons.join('; ') || undefined } : { rows: null as IapRow[] | null, reason: reasons.join('; ') }
+      const full = results.every(([, r]) => !r.rows || r.full)
+      return rows.length ? { rows, reason: reasons.join('; ') || undefined, full } : { rows: null as IapRow[] | null, reason: reasons.join('; '), full }
     })()
   ])
   const pick = (r: { rows: IapRow[] | null }, p: { amount: number | null; name: string }) =>
@@ -140,7 +141,7 @@ export async function fetchArchitectPacks(options?: { signal?: AbortSignal }): P
       const hit = pick(res, key)
       pack[`price_${f}`] = hit ? hit.price : null
       pack[`price_${f}_source`] = hit ? `apple-app-store-${hit.storefront ?? tag}` : null
-      if (!hit) pack[`price_${f}_null_reason`] = !res.rows ? res.reason ?? 'unavailable' : cur === 'THB' ? 'Same pack not in App Store TH IAP list (Apple web shows top 10 only); DRIMAGE web shop prices TWD only' : 'Same pack not in App Store USD storefront IAP lists (US not listed; KH/LA top 10 only)' + (res.reason ? ' [' + res.reason + ']' : '')
+      if (!hit) pack[`price_${f}_null_reason`] = !res.rows ? res.reason ?? 'unavailable' : cur === 'THB' ? `Same pack not in App Store TH IAP list (${iapScope(res.full)}); DRIMAGE web shop prices TWD only` : `Same pack not in App Store USD storefront IAP lists (US not listed; KH/LA: ${iapScope(res.full)})` + (res.reason ? ' [' + res.reason + ']' : '')
     }
     ;(pack as any).prices = { THB: pack.price_thb, USD: pack.price_usd, ...(pack.store_currency && pack.store_price !== null ? { [pack.store_currency]: pack.store_price } : {}) }
     pack.price = pack.price_thb ?? pack.price_usd ?? pack.store_price ?? 0
@@ -182,7 +183,7 @@ export async function fetchArchitectPacks(options?: { signal?: AbortSignal }): P
   if (!th.rows) notes.push('App Store TH: ' + th.reason)
   if (us.reason) notes.push('App Store USD storefronts: ' + us.reason)
   notes.push('Tried for THB/USD on web shop tiers: DRIMAGE web shop ?lang=th/currency/region/country params and product pages (TWD only); official site links only to this web shop; App Store TH/US/KH/LA (+ iTunes lookup); no official THB/USD price for 495-33,000 diamond web tiers.')
-  notes.push('Also tried for real THB (no conversion): App Store TH with ?l=th / ?l=en and ?platform=iphone/ipad/mac/appletv/vision (same top-10 IAP list every time); Google Play TH (com.hybeim.architect) shows only a range, no per-item prices; DRIMAGE official site TH pages, news and the oqupie FAQ list no Thai prices; no official Thai publisher or Thai payment page exists (the web shop pays via MyCard in TWD). Thai sites that list THB are resellers, so they are not used.')
+  notes.push('Also tried for real THB (no conversion): App Store TH product page with ?l=th / ?l=en and ?platform=iphone/ipad/mac/appletv/vision (page shows the same top-10 IAP list; the full list now comes from the App Store catalog API, still no THB for the TWD web-shop diamond tiers unless the same pack is sold on App Store TH); Google Play TH (com.hybeim.architect) shows only a range, no per-item prices; DRIMAGE official site TH pages, news and the oqupie FAQ list no Thai prices; no official Thai publisher or Thai payment page exists (the web shop pays via MyCard in TWD). Thai sites that list THB are resellers, so they are not used.')
   return ({
     game: { id: ARCHITECT_APP_ID, slug: ARCHITECT_SLUG, name: 'Architect: Land of Exiles', itemName: 'Diamond', itemIcon: '' },
     categories,
