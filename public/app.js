@@ -179,9 +179,9 @@ function renderPackRow(pack) {
 
   // Display like "5,000 + 580 (5,580)"; bonus null = official bonus source unavailable (never guessed).
   const amounts =
-    pack.item_pack === true || pack.baseItemAmount === null
+    pack.item_pack === true || pack.baseItemAmount == null
       ? '—'
-      : pack.bonusItemAmount === null || pack.bonus_available === false
+      : pack.bonusItemAmount == null || pack.bonus_available === false
       ? `${formatNumber(pack.baseItemAmount)} + ? (bonus unavailable)`
       : Number(pack.bonusItemAmount) > 0
         ? `${formatNumber(pack.baseItemAmount)} + ${formatNumber(pack.bonusItemAmount)} (${formatNumber(pack.totalItemAmount)})`
@@ -191,6 +191,9 @@ function renderPackRow(pack) {
     Array.isArray(pack.issues) && pack.issues.length
       ? `<div class="issues">${escapeHtml(pack.issues.join(' · '))}</div>`
       : ''
+
+  const descText = [pack.description ?? pack.goods_desc ?? pack.contents ?? '', Array.isArray(pack.extras) && pack.extras.length ? pack.extras.join(', ') : '', pack.first_purchase_bonus > 0 ? 'First purchase bonus +' + formatNumber(pack.first_purchase_bonus) : ''].filter(Boolean).join(' · ')
+  const desc = descText ? `<div class="meta">${escapeHtml(descText)}</div>` : ''
 
   const sources = [
     pack.price_thb_source ? `THB: ${pack.price_thb_source}` : null,
@@ -203,6 +206,7 @@ function renderPackRow(pack) {
     <td>
       <strong>${escapeHtml(pack.name ?? '—')}</strong>
       <div class="meta">ID ${escapeHtml(pack.id ?? '—')}</div>
+      ${desc}
       ${issues}
     </td>
     <td class="num">${escapeHtml(amounts)}</td>

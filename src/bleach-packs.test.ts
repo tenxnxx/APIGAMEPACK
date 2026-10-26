@@ -42,14 +42,30 @@ describe('bleach games', () => {
     expect(ps[2]).toMatchObject({ baseItemAmount: 25, price_thb: null, price_usd: 3.99 })
     expect(ps[2].price_thb_null_reason).toContain('TH')
   })
-  it('soul resonance: USD from KH (USD nbsp) for same app', async () => {
+  it('soul resonance: official nvsgames TH web shop primary (satang/100), KH USD by name', async () => {
+    const nvs = { code: 0, data: { activity: [], normal: [
+      { goods_type: 2, product_name: 'Premium Spiritual Jade \u00D7300', price: 17900, currency_type: 'THB', product_id: 'jade300', coins: 300, uptopresent_details: { present_coin_num: 0 }, firstsave_details: null },
+      { goods_type: 1, product_name: 'Monthly Card Membership', price: 17900, currency_type: 'THB', product_id: 'mc', goods_desc: '<p>Get <b>300</b>&nbsp;Jade</p>' }
+    ] } }
     mock({
+      'https://pay.nvsgames.com/web/payment/app/389369/country/TH/all_goods_detail': () => Response.json(nvs),
       'https://apps.apple.com/th/app/id6745081346': () => new Response(iap('Monthly Card Membership', '\u0E3F179.00')),
       'https://apps.apple.com/kh/app/id6745081346': () => new Response(iap('Monthly Card Membership', 'USD\u00A04.99'))
     })
-    const body = (await (await get('bleach-sr')).json()) as any
+    const res = await get('bleach-sr')
+    expect(res.status).toBe(200)
+    const body = (await res.json()) as any
     expect(body.game.slug).toBe('bleach-soul-resonance')
-    expect(body.categories[0].packs[0]).toMatchObject({ price_thb: 179, price_usd: 4.99, price_usd_source: 'apple-app-store-kh' })
+    const ps = body.categories[0].packs
+    expect(ps[0]).toMatchObject({ price_thb: 179, baseItemAmount: 300, bonusItemAmount: 0, totalItemAmount: 300, item_pack: false, price_usd: null })
+    expect(ps[0].price_usd_null_reason).toContain('USD')
+    expect(ps[1]).toMatchObject({ item_pack: true, baseItemAmount: null, price_thb: 179, price_usd: 4.99, price_usd_source: 'apple-app-store-kh', description: 'Get 300 Jade' })
+  })
+  it('soul resonance: 502 when web shop 503 or code!=0', async () => {
+    mock({ 'https://pay.nvsgames.com/': () => new Response('x', { status: 503 }) })
+    expect((await get('bleach-soul-resonance')).status).toBe(502)
+    mock({ 'https://pay.nvsgames.com/': () => Response.json({ code: 1, message: 'err' }) })
+    expect((await get('bleach-soul-resonance')).status).toBe(502)
   })
   it('502 when App Store TH is down or empty', async () => {
     mock({ 'https://apps.apple.com/th/': () => new Response('x', { status: 503 }) })
