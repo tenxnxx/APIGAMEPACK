@@ -1,6 +1,11 @@
 import { Elysia } from 'elysia'
 import { getGameBySlug } from '../games/registry'
 import {
+  CabalInvalidUpstreamResponseError,
+  CabalUpstreamUnavailableError,
+  fetchCabalPacks
+} from '../services/cabal-packs.service'
+import {
   AceRacerInvalidUpstreamResponseError,
   AceRacerUpstreamUnavailableError,
   fetchAceRacerPacks
@@ -438,6 +443,20 @@ export const gamesPacksRoutes = new Elysia().get(
         throw error
       }
     } 
+
+    if (game.provider === 'cabal-combo') {
+      try {
+        return await fetchCabalPacks()
+      } catch (error) {
+        if (error instanceof CabalUpstreamUnavailableError) {
+          return status(502, { error: 'Upstream service unavailable' })
+        }
+        if (error instanceof CabalInvalidUpstreamResponseError) {
+          return status(502, { error: 'Invalid upstream response' })
+        }
+        throw error
+      }
+    }
 
     if (game.provider === 'aceracer-netease') {
       try {

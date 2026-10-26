@@ -26,6 +26,7 @@ export type GameProvider =
   | 'architect-drimage'
   | 'bleach-appstore'
   | 'aceracer-netease'
+  | 'cabal-combo'
 export type GameRegistryEntry = {
   appId: number
   slug: string
@@ -190,6 +191,9 @@ export const GAME_REGISTRY: Record<string, GameRegistryEntry> = {
   aniimo: { appId: 999002, slug: 'aniimo', provider: 'aniimo-official' },
   'architect-land-of-exiles': { appId: 6698862298, slug: 'architect-land-of-exiles', provider: 'architect-drimage' },
   architect: { appId: 6698862298, slug: 'architect-land-of-exiles', provider: 'architect-drimage' },
+  'cabal-infinite-combo': { appId: 0, slug: 'cabal-infinite-combo', provider: 'cabal-combo' },
+  cabal: { appId: 0, slug: 'cabal-infinite-combo', provider: 'cabal-combo' },
+  'cabal-m': { appId: 0, slug: 'cabal-infinite-combo', provider: 'cabal-combo' },
   'ace-racer': { appId: 1593356371, slug: 'ace-racer', provider: 'aceracer-netease' },
   aceracer: { appId: 1593356371, slug: 'ace-racer', provider: 'aceracer-netease' },
   'bleach-brave-souls': { appId: 1003168863, slug: 'bleach-brave-souls', provider: 'bleach-appstore' },
@@ -347,6 +351,7 @@ const GAME_DISPLAY_NAMES: Record<string, string> = {
   aniimo: 'Aniimo',
   'architect-land-of-exiles': 'Architect: Land of Exiles',
   'ace-racer': 'Ace Racer',
+  'cabal-infinite-combo': 'CABAL: INFINITE COMBO',
   'bleach-brave-souls': 'BLEACH: Brave Souls',
   'bleach-soul-resonance': 'BLEACH: Soul Resonance',
   'bleach-mirrors-high': 'BLEACH Mirrors High',
