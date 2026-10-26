@@ -1,4 +1,9 @@
 import {
+  DestinyRisingInvalidUpstreamResponseError,
+  DestinyRisingUpstreamUnavailableError,
+  fetchDestinyRisingPacks
+} from '../services/destiny-rising-packs.service'
+import {
   CflInvalidUpstreamResponseError,
   CflUpstreamUnavailableError,
   fetchCflPacks
@@ -453,6 +458,20 @@ export const gamesPacksRoutes = new Elysia().get(
         throw error
       }
     } 
+
+    if (game.provider === 'destiny-rising-netease') {
+      try {
+        return await fetchDestinyRisingPacks()
+      } catch (error) {
+        if (error instanceof DestinyRisingUpstreamUnavailableError) {
+          return status(502, { error: 'Upstream service unavailable' })
+        }
+        if (error instanceof DestinyRisingInvalidUpstreamResponseError) {
+          return status(502, { error: 'Invalid upstream response' })
+        }
+        throw error
+      }
+    }
 
     if (game.provider === 'cfl-midasbuy') {
       try {

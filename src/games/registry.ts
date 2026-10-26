@@ -27,6 +27,9 @@ export type GameProvider =
   | 'bleach-appstore'
   | 'aceracer-netease'
   | 'cabal-combo'
+  | 'tsubasa-klab'
+  | 'cfl-midasbuy'
+  | 'destiny-rising-netease'
 export type GameRegistryEntry = {
   appId: number
   slug: string
@@ -191,6 +194,9 @@ export const GAME_REGISTRY: Record<string, GameRegistryEntry> = {
   aniimo: { appId: 999002, slug: 'aniimo', provider: 'aniimo-official' },
   'architect-land-of-exiles': { appId: 6698862298, slug: 'architect-land-of-exiles', provider: 'architect-drimage' },
   architect: { appId: 6698862298, slug: 'architect-land-of-exiles', provider: 'architect-drimage' },
+  'destiny-rising': { appId: 1593326563, slug: 'destiny-rising', provider: 'destiny-rising-netease' },
+  'destinyrising': { appId: 1593326563, slug: 'destiny-rising', provider: 'destiny-rising-netease' },
+  'destiny-rising-mobile': { appId: 1593326563, slug: 'destiny-rising', provider: 'destiny-rising-netease' },
   'crossfire-legends': { appId: 1460001033, slug: 'crossfire-legends', provider: 'cfl-midasbuy' },
   cfl: { appId: 1460001033, slug: 'crossfire-legends', provider: 'cfl-midasbuy' },
   'crossfire-legend': { appId: 1460001033, slug: 'crossfire-legends', provider: 'cfl-midasbuy' },
@@ -360,6 +366,7 @@ const GAME_DISPLAY_NAMES: Record<string, string> = {
   'cabal-infinite-combo': 'CABAL: INFINITE COMBO',
   'captain-tsubasa-dream-team': 'Captain Tsubasa: Dream Team',
   'crossfire-legends': 'Crossfire: Legends',
+  'destiny-rising': 'Destiny: Rising',
   'bleach-brave-souls': 'BLEACH: Brave Souls',
   'bleach-soul-resonance': 'BLEACH: Soul Resonance',
   'bleach-mirrors-high': 'BLEACH Mirrors High',
