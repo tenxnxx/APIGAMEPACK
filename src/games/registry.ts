@@ -32,6 +32,7 @@ export type GameProvider =
   | 'destiny-rising-netease'
   | 'draconia-sugarfun'
   | 'dnm-classic-mobapay'
+  | 'arena-breakout-midasbuy'
 export type GameRegistryEntry = {
   appId: number
   slug: string
@@ -199,6 +200,9 @@ export const GAME_REGISTRY: Record<string, GameRegistryEntry> = {
   'dragon-nest-m-classic': { appId: 6743824718, slug: 'dragon-nest-m-classic', provider: 'dnm-classic-mobapay' },
   'dnm-classic': { appId: 6743824718, slug: 'dragon-nest-m-classic', provider: 'dnm-classic-mobapay' },
   'dragon-nest-m': { appId: 6743824718, slug: 'dragon-nest-m-classic', provider: 'dnm-classic-mobapay' },
+  'arena-breakout': { appId: 1560765304, slug: 'arena-breakout', provider: 'arena-breakout-midasbuy' },
+  'arena-breakout-mobile': { appId: 1560765304, slug: 'arena-breakout', provider: 'arena-breakout-midasbuy' },
+  'abm': { appId: 1560765304, slug: 'arena-breakout', provider: 'arena-breakout-midasbuy' },
   'draconia-saga': { appId: 6476590090, slug: 'draconia-saga', provider: 'draconia-sugarfun' },
   draconia: { appId: 6476590090, slug: 'draconia-saga', provider: 'draconia-sugarfun' },
   'draconia-saga-sea': { appId: 6476590090, slug: 'draconia-saga', provider: 'draconia-sugarfun' },
@@ -377,6 +381,7 @@ const GAME_DISPLAY_NAMES: Record<string, string> = {
   'destiny-rising': 'Destiny: Rising',
   'draconia-saga': 'Draconia Saga',
   'dragon-nest-m-classic': 'Dragon Nest M: Classic',
+  'arena-breakout': 'Arena Breakout: Mobile',
   'bleach-brave-souls': 'BLEACH: Brave Souls',
   'bleach-soul-resonance': 'BLEACH: Soul Resonance',
   'bleach-mirrors-high': 'BLEACH Mirrors High',

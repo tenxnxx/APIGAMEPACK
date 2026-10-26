@@ -1,4 +1,9 @@
 import {
+  ArenaBreakoutInvalidUpstreamResponseError,
+  ArenaBreakoutUpstreamUnavailableError,
+  fetchArenaBreakoutPacks
+} from '../services/arena-breakout-packs.service'
+import {
   DnmInvalidUpstreamResponseError,
   DnmUpstreamUnavailableError,
   fetchDnmPacks
@@ -468,6 +473,20 @@ export const gamesPacksRoutes = new Elysia().get(
         throw error
       }
     } 
+
+    if (game.provider === 'arena-breakout-midasbuy') {
+      try {
+        return await fetchArenaBreakoutPacks()
+      } catch (error) {
+        if (error instanceof ArenaBreakoutUpstreamUnavailableError) {
+          return status(502, { error: 'Upstream service unavailable' })
+        }
+        if (error instanceof ArenaBreakoutInvalidUpstreamResponseError) {
+          return status(502, { error: 'Invalid upstream response' })
+        }
+        throw error
+      }
+    }
 
     if (game.provider === 'dnm-classic-mobapay') {
       try {
