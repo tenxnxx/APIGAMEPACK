@@ -1,3 +1,4 @@
+import { appStoreFetch, APPSTORE_FULL_IAP_NOTE } from './appstore-full-iap'
 import type { RovPacksResponse } from '../types/rov'
 import { parseAppStoreIapRows, type IapRow } from './architect-packs.service'
 
@@ -56,7 +57,7 @@ export function parseTsubasaShop(html: string): TsubasaShopProduct[] {
 
 async function fetchIap(url: string, cur: 'THB' | 'USD', lang: string, signal?: AbortSignal): Promise<{ rows: IapRow[] | null; reason?: string }> {
   try {
-    const r = await fetch(url, { signal: signal ?? AbortSignal.timeout(20_000), redirect: 'follow', headers: { 'User-Agent': UA, 'Accept-Language': lang, Accept: 'text/html' } })
+    const r = await appStoreFetch(url, { signal: signal ?? AbortSignal.timeout(20_000), redirect: 'follow', headers: { 'User-Agent': UA, 'Accept-Language': lang, Accept: 'text/html' } })
     if (r.status !== 200) return { rows: null, reason: `App Store HTTP ${r.status}` }
     const rows = parseAppStoreIapRows(await r.text(), cur)
     return rows.length ? { rows } : { rows: null, reason: 'No IAP rows on App Store page' }
@@ -135,6 +136,7 @@ export async function fetchTsubasaPacks(options?: { signal?: AbortSignal }): Pro
     'Main: official KLab Dreamball Top-Up Center ' + TSUBASA_SHOP_URL + ' (live guest HTML). USD = shop price; base = Dreamball (Paid); bonus = Dreamball (Free).',
     'The official shop shows guest prices only in USD (local currency after KLab ID login), so web-shop THB is null. THB/USD for in-app items = App Store TH/US (KLab app ' + TSUBASA_APP_ID + '). No FX conversion.'
   ]
+  notes.push(APPSTORE_FULL_IAP_NOTE)
   if (!th.rows) notes.push('App Store TH: ' + th.reason)
   if (!us.rows) notes.push('App Store US: ' + us.reason)
   return ({

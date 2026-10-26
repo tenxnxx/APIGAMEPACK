@@ -1,3 +1,4 @@
+import { appStoreFetch, APPSTORE_FULL_IAP_NOTE } from './appstore-full-iap'
 import type { RovPacksResponse } from '../types/rov'
 import { parseAppStoreIapRows as parseRaw, type IapRow, type ArchitectPack } from './architect-packs.service'
 
@@ -66,7 +67,7 @@ const key = (n: string) => n.toLowerCase().replace(/\s+/g, ' ').trim()
 
 async function fetchIap(url: string, cur: 'THB' | 'USD', lang: string, signal?: AbortSignal) {
   try {
-    const r = await fetch(url, { signal: signal ?? AbortSignal.timeout(20_000), headers: { 'User-Agent': UA, 'Accept-Language': lang, Accept: 'text/html' } })
+    const r = await appStoreFetch(url, { signal: signal ?? AbortSignal.timeout(20_000), headers: { 'User-Agent': UA, 'Accept-Language': lang, Accept: 'text/html' } })
     const text = await r.text()
     if (r.status === 404) return { rows: null as IapRow[] | null, reason: 'Not listed on this storefront (HTTP 404)', status: 404 }
     if (r.status !== 200) return { rows: null, reason: `App Store HTTP ${r.status}`, status: r.status }
@@ -239,6 +240,7 @@ export async function fetchBleachSoulResonancePacks(options?: { signal?: AbortSi
     'USD: official web shop has no USD region (only TH/SG/MY/PH/ID; US/KH/LA/VN return "goods not found"). USD only where the same pack name appears in App Store KH/LA (same app 6745081346, USD) or US Crunchyroll build 6751220183; else null + reason.',
     'payment.playbleachsr.com (MobaPay, global/Crunchyroll) lists only EUR/RUB regions; TH/US "App is closed".'
   ]
+  notes.push(APPSTORE_FULL_IAP_NOTE)
   if (!th.rows) notes.push('App Store TH: ' + th.reason)
   if (usdReasons.length) notes.push('USD storefronts: ' + usdReasons.join('; '))
   return ({

@@ -1,3 +1,4 @@
+import { appStoreFetch, APPSTORE_FULL_IAP_NOTE } from './appstore-full-iap'
 import type { RovPack, RovPacksResponse } from '../types/rov'
 
 /**
@@ -85,7 +86,7 @@ export function parseAppStoreIapRows(html: string, currency: 'THB' | 'USD'): Iap
 }
 
 async function fetchText(url: string, lang: string, signal?: AbortSignal): Promise<{ status: number; text: string }> {
-  const r = await fetch(url, { signal: signal ?? AbortSignal.timeout(20_000), headers: { 'User-Agent': UA, 'Accept-Language': lang, Accept: 'text/html' } })
+  const r = await appStoreFetch(url, { signal: signal ?? AbortSignal.timeout(20_000), headers: { 'User-Agent': UA, 'Accept-Language': lang, Accept: 'text/html' } })
   return { status: r.status, text: await r.text() }
 }
 
@@ -177,6 +178,7 @@ export async function fetchArchitectPacks(options?: { signal?: AbortSignal }): P
     'Main: official DRIMAGE Web Shop (public HTML, prices TWD via MyCard). Extras (AP / MILEAGE) are separate points, not diamonds.',
     'THB/USD from official Apple App Store TH/US IAP list matched by diamond amount (no conversion); null + *_null_reason when no match.'
   ]
+  notes.push(APPSTORE_FULL_IAP_NOTE)
   if (!th.rows) notes.push('App Store TH: ' + th.reason)
   if (us.reason) notes.push('App Store USD storefronts: ' + us.reason)
   notes.push('Tried for THB/USD on web shop tiers: DRIMAGE web shop ?lang=th/currency/region/country params and product pages (TWD only); official site links only to this web shop; App Store TH/US/KH/LA (+ iTunes lookup); no official THB/USD price for 495-33,000 diamond web tiers.')

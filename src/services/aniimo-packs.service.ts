@@ -1,3 +1,4 @@
+import { appStoreFetch, APPSTORE_FULL_IAP_NOTE } from './appstore-full-iap'
 import type { RovPack, RovPacksResponse } from '../types/rov'
 import { isFiniteNumber, isRecord } from '../lib/guards'
 
@@ -45,7 +46,7 @@ export function aniimoIapKey(name: string): string | null {
 }
 
 async function fetchIap(url: string, currency: 'THB' | 'USD', lang: string, signal?: AbortSignal): Promise<Map<string, number>> {
-  const res = await fetch(url, { signal: signal ?? AbortSignal.timeout(20_000), headers: { 'User-Agent': BROWSER_UA, 'Accept-Language': lang, Accept: 'text/html' } })
+  const res = await appStoreFetch(url, { signal: signal ?? AbortSignal.timeout(20_000), headers: { 'User-Agent': BROWSER_UA, 'Accept-Language': lang, Accept: 'text/html' } })
   if (!res.ok) throw new Error('HTTP ' + res.status)
   const map = new Map<string, number>()
   for (const r of parseAniimoAppStoreIap(await res.text(), currency)) {
@@ -224,6 +225,7 @@ export async function fetchAniimoPacks(options?: { signal?: AbortSignal }): Prom
     source: ANIIMO_SHOP_URL,
     sources,
     notes: [
+      APPSTORE_FULL_IAP_NOTE,
       'Official Aniimo web shop API (same data as https://www.aniimo.com/store/en/).',
       `Official shop currency picked by upstream from server IP: ${currency || 'unknown'} (country ${country ?? 'unknown'}); request fields for country/currency are ignored upstream.`,
       'Price = original_price (full price). Bonus = level_normal_rebate coin (standard bonus); null if missing.',

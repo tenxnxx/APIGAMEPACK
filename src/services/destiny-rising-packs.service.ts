@@ -1,3 +1,4 @@
+import { appStoreFetch, APPSTORE_FULL_IAP_NOTE } from './appstore-full-iap'
 import type { RovPacksResponse } from '../types/rov'
 import { parseAppStoreIapRows, type IapRow } from './architect-packs.service'
 
@@ -44,7 +45,7 @@ async function getJson(url: string, signal?: AbortSignal): Promise<any> {
 
 async function fetchIap(url: string, cur: 'THB' | 'USD', lang: string, signal?: AbortSignal): Promise<{ rows: IapRow[] | null; reason?: string }> {
   try {
-    const r = await fetch(url, { signal: signal ?? AbortSignal.timeout(20_000), redirect: 'follow', headers: { 'User-Agent': UA, 'Accept-Language': lang, Accept: 'text/html' } })
+    const r = await appStoreFetch(url, { signal: signal ?? AbortSignal.timeout(20_000), redirect: 'follow', headers: { 'User-Agent': UA, 'Accept-Language': lang, Accept: 'text/html' } })
     if (r.status !== 200) return { rows: null, reason: `App Store HTTP ${r.status}` }
     const rows = parseAppStoreIapRows(await r.text(), cur)
     return rows.length ? { rows } : { rows: null, reason: 'No IAP rows on App Store page' }
@@ -137,6 +138,7 @@ export async function fetchDestinyRisingPacks(options?: { signal?: AbortSignal }
     'Main: official NetEase GamesClub top-up (game code destinyrising, live products API). USD = product.price; base = pay_yuanbao; bonus = activitys marketing_free_amount (alpha2=TH) + free_yuanbao.',
     'The official store sells Destiny: Rising only in USD (local_price has no TH). THB = App Store TH (NetEase app ' + DESTINY_RISING_APP_ID + ') matched by Silver amount; otherwise null. No FX conversion.'
   ]
+  notes.push(APPSTORE_FULL_IAP_NOTE)
   if (!th.rows) notes.push('App Store TH: ' + th.reason)
   if (!us.rows) notes.push('App Store US: ' + us.reason)
   return ({
