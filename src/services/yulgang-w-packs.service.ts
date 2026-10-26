@@ -8,6 +8,9 @@ export const YULGANG_W_APPSTORE_URL =
 const BROWSER_UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36'
 
+const TAEL_NULL_REASON =
+  'App Store IAP list shows only the product name and price, not Tael amounts; the official Efun store that shows them requires login.'
+
 export class YulgangWUpstreamUnavailableError extends Error {
   constructor(message = 'Yulgang W App Store upstream unavailable') {
     super(message)
@@ -200,15 +203,19 @@ function parseFromHtmlText(html: string): ParsedIap[] {
 }
 
 function toResponse(packs: ParsedIap[], source: string): RovPacksResponse {
-  const mapped: RovPack[] = packs
+  const mapped = packs
     .slice()
     .sort((a, b) => a.priceUsd - b.priceUsd)
     .map((pack) => ({
       id: packNameToId(pack.name),
       name: pack.name,
-      baseItemAmount: 0,
-      bonusItemAmount: 0,
-      totalItemAmount: 0,
+      baseItemAmount: null,
+      bonusItemAmount: null,
+      totalItemAmount: null,
+      base_null_reason: TAEL_NULL_REASON,
+      bonus_null_reason: TAEL_NULL_REASON,
+      total_null_reason: TAEL_NULL_REASON,
+      item_pack: false,
       price: pack.priceThb,
       currency: 'THB',
       price_thb: pack.priceThb,
@@ -216,7 +223,7 @@ function toResponse(packs: ParsedIap[], source: string): RovPacksResponse {
       prices: { THB: pack.priceThb, USD: pack.priceUsd },
       price_thb_source: 'appstore',
       price_usd_source: 'appstore'
-    }))
+    })) as unknown as RovPack[]
 
   return {
     game: {
@@ -231,7 +238,8 @@ function toResponse(packs: ParsedIap[], source: string): RovPacksResponse {
         id: 1,
         name: 'App Store In-App Purchases',
         status: 0,
-        message: 'Live IAP list from App Store TH (no fallback)',
+        message:
+          'Live IAP list from App Store TH (fallback: official Efun TH store th.efunsea.com/recharge requires account login, no public price list)',
         packCount: mapped.length,
         packs: mapped
       }
@@ -247,6 +255,9 @@ function toResponse(packs: ParsedIap[], source: string): RovPacksResponse {
       usd: source
     },
     notes: [
+      'Official Efun Thailand top-up (th.efunsea.com/recharge, payth.efunsea.com payItems) requires login; no public price list, so the App Store TH IAP list is used as fallback.',
+      'App Store US has no Yulgang W listing (TH/SEA-only), so USD comes from the official IAP product name (N.NNUSD Pack).',
+      'Tael base/bonus amounts are not shown on the App Store; they are null with a reason.',
       'FULL THB from App Store In-App Purchases price text (฿).',
       'USD parsed from offer name pattern N.NNUSD Pack (not FX).',
       'Live-fetch only; empty/unparseable upstream → error (no static catalog).'
