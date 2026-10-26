@@ -75,7 +75,7 @@ function usdLookup(usdRes: UsdRes, name: string): { row: IapRow & { storefront: 
 }
 const ambReason = (a: { ambiguous: number[]; sf: string }) =>
   `Same name sold at several prices on App Store ${a.sf.toUpperCase()} (USD ${a.ambiguous.join(' / ')}); not matched to avoid guessing`
-const usdAllFull = (usdRes: UsdRes) => usdRes.some(([, r]) => r.rows) && usdRes.every(([, r]) => !r.rows || r.full)
+const usdAllFull = (usdRes: UsdRes) => usdRes.some(([, r]) => r.rows && r.full) // a full list from any USD storefront was checked
 
 async function fetchIap(url: string, cur: 'THB' | 'USD', lang: string, signal?: AbortSignal) {
   try {
@@ -138,6 +138,7 @@ export async function fetchBleachPacks(slug: string, options?: { signal?: AbortS
     'Matching is by exact pack name (Unicode-normalised, × = x, thousands separators ignored). A name sold at several prices on one storefront is left null rather than guessed.',
     ...g.extraNotes
   ]
+  notes.push(APPSTORE_FULL_IAP_NOTE)
   if (usdReasons.length) notes.push('USD storefronts: ' + usdReasons.join('; '))
   return ({
     game: { id: g.appId, slug: g.slug, name: g.name, itemName: g.itemName, itemIcon: '' },
