@@ -1,4 +1,5 @@
 import type { RovPack, RovPacksResponse } from '../types/rov'
+import { fetchAppStoreFullIap, APPSTORE_FULL_IAP_NOTE, type AppStoreFullIapRow } from './appstore-full-iap'
 
 export const YULGANG_W_APP_ID = 6756002784
 export const YULGANG_W_SLUG = 'yulgang-w'
@@ -63,7 +64,7 @@ export function parseUsdFromPackName(name: string): number | null {
 
 /**
  * Prefer embedded App Store JSON textPairs / items_V3 under
- * shelfMapping.information → title "In-App Purchases".
+ * shelfMapping.information โ’ title "In-App Purchases".
  * Falls back to HTML text-pair scraping when JSON is absent.
  */
 export function parseYulgangWIapFromHtml(html: string): ParsedIap[] {
@@ -171,7 +172,7 @@ function collectTextPairs(node: unknown): Array<[string, string]> {
 
 function parseFromHtmlText(html: string): ParsedIap[] {
   const out: ParsedIap[] = []
-  // e.g. 0.99USD Pack … ฿35.00  (baht may appear as mojibake)
+  // e.g. 0.99USD Pack โ€ฆ เธฟ35.00  (baht may appear as mojibake)
   const re =
     /([0-9]+(?:\.[0-9]+)?\s*USD\s*Pack)[\s\S]{0,240}?(?:\u0e3f|THB|&#3647;|&baht;|[^\x00-\x7F]{1,3})\s*([\d,]+(?:\.\d+)?)/gi
   let m: RegExpExecArray | null
@@ -258,17 +259,120 @@ function toResponse(packs: ParsedIap[], source: string): RovPacksResponse {
       'Official Efun Thailand top-up (th.efunsea.com/recharge, payth.efunsea.com payItems) requires login; no public price list, so the App Store TH IAP list is used as fallback.',
       'App Store US has no Yulgang W listing (TH/SEA-only), so USD comes from the official IAP product name (N.NNUSD Pack).',
       'Tael base/bonus amounts are not shown on the App Store; they are null with a reason.',
-      'FULL THB from App Store In-App Purchases price text (฿).',
+      'FULL THB from App Store In-App Purchases price text (เธฟ).',
       'USD parsed from offer name pattern N.NNUSD Pack (not FX).',
-      'Live-fetch only; empty/unparseable upstream → error (no static catalog).'
+      'Live-fetch only; empty/unparseable upstream โ’ error (no static catalog).'
     ]
   }
 }
 
+/** App Store storefronts priced in real USD by Apple (US has no Yulgang W listing; KH/LA are USD storefronts). */
+export const YULGANG_W_USD_STOREFRONTS = ['kh', 'la'] as const
+export const yulgangWCatalogUrl = (cc: string) =>
+  `https://apps.apple.com/api/apps/v1/catalog/${cc}/apps/${YULGANG_W_APP_ID}/top-in-apps`
+
+const PACK_CATEGORY = 'Packs'
+const SPECIAL_CATEGORY = 'Special Packs'
+/** Efun product ids: ae.aerxjhw.{N}usd.{base|pack}[.efun]; the .efun suffix is the "Special Pack" line. */
+const isSpecial = (r: AppStoreFullIapRow) => /\.efun$/i.test(r.offerName ?? '') || /special pack/i.test(r.name)
+
+type UsdList = { cc: string; rows: AppStoreFullIapRow[] } | { cc: null; reason: string }
+
+async function fetchUsdList(signal?: AbortSignal): Promise<UsdList> {
+  const errors: string[] = []
+  for (const cc of YULGANG_W_USD_STOREFRONTS) {
+    try {
+      const rows = await fetchAppStoreFullIap(cc, String(YULGANG_W_APP_ID), 'en-GB', signal)
+      if (rows.some((r) => r.currency === 'USD')) return { cc, rows: rows.filter((r) => r.currency === 'USD') }
+      errors.push(`${cc}: no USD prices`)
+    } catch (e) {
+      errors.push(`${cc}: ${e instanceof Error ? e.message : String(e)}`)
+    }
+  }
+  return { cc: null, reason: errors.join('; ') }
+}
+
+/** Exact cross-storefront match: Apple offerName (Efun product id), else the same Apple item id. Never by name. */
+export function matchYulgangWUsd(rows: AppStoreFullIapRow[], th: AppStoreFullIapRow): { row: AppStoreFullIapRow; by: string } | null {
+  if (th.offerName) {
+    const hits = rows.filter((r) => r.offerName === th.offerName)
+    if (hits.length === 1) return { row: hits[0], by: `offerName=${th.offerName}` }
+  }
+  if (th.id) {
+    const hit = rows.find((r) => r.id === th.id)
+    if (hit) return { row: hit, by: `item ${th.id}` }
+  }
+  return null
+}
+
+/** Response from the full App Store TH list (THB) + an Apple USD storefront (USD), matched by offerName / item id. */
+export function buildYulgangWFullResponse(thRows: AppStoreFullIapRow[], usd: UsdList): RovPacksResponse {
+  const thb = thRows.filter((r) => r.currency === 'THB' || r.currency === '')
+  const toPack = (r: AppStoreFullIapRow) => {
+    const m = usd.cc ? matchYulgangWUsd(usd.rows, r) : null
+    const priceUsd = m ? m.row.price : null
+    const usdReason = usd.cc
+      ? m ? undefined : `not found on App Store ${usd.cc.toUpperCase()} (USD storefront) by offerName/Apple item id`
+      : `App Store USD storefront list unavailable (${'reason' in usd ? usd.reason : 'unknown'}); App Store US has no Yulgang W listing`
+    return {
+      id: Number(r.id) || packNameToId(r.name),
+      name: r.name,
+      apple_item_id: r.id || null,
+      product_id: r.offerName ?? null,
+      baseItemAmount: null,
+      bonusItemAmount: null,
+      totalItemAmount: null,
+      base_null_reason: TAEL_NULL_REASON,
+      bonus_null_reason: TAEL_NULL_REASON,
+      total_null_reason: TAEL_NULL_REASON,
+      item_pack: false,
+      price: r.price,
+      currency: 'THB',
+      price_thb: r.price,
+      price_usd: priceUsd,
+      prices: { THB: r.price, USD: priceUsd },
+      price_thb_source: `apple-app-store-th (item ${r.id}${r.offerName ? `, offerName=${r.offerName}` : ''})`,
+      price_usd_source: m ? `apple-app-store-${usd.cc} (USD storefront, ${m.by})` : null,
+      /** Nominal USD tier in Efun's own product name (e.g. '5.99USD Pack'); informational, not Apple's charge. */
+      usd_in_product_name: parseUsdFromPackName(r.name),
+      ...(usdReason ? { price_usd_null_reason: usdReason } : {})
+    }
+  }
+  const sortKey = (a: AppStoreFullIapRow, b: AppStoreFullIapRow) => a.price - b.price || a.name.localeCompare(b.name)
+  const regular = thb.filter((r) => !isSpecial(r)).sort(sortKey).map(toPack) as unknown as RovPack[]
+  const special = thb.filter(isSpecial).sort(sortKey).map(toPack) as unknown as RovPack[]
+  const categories = [
+    { id: 1, name: PACK_CATEGORY, status: 0, message: 'Efun product ids ae.aerxjhw.{N}usd.base / .pack', packCount: regular.length, packs: regular },
+    { id: 2, name: SPECIAL_CATEGORY, status: 0, message: 'Efun product ids ending .efun ("Special Pack")', packCount: special.length, packs: special }
+  ].filter((c) => c.packCount > 0)
+  const packCount = regular.length + special.length
+  return {
+    game: { id: YULGANG_W_APP_ID, slug: YULGANG_W_SLUG, name: 'Yulgang W', itemName: 'Pack', itemIcon: '' },
+    categories,
+    summary: { categoryCount: categories.length, packCount },
+    fetchedAt: new Date().toISOString(),
+    source: yulgangWCatalogUrl('th'),
+    sources: {
+      thb: yulgangWCatalogUrl('th'),
+      usd: usd.cc ? yulgangWCatalogUrl(usd.cc) : null,
+      appstore_th_page: YULGANG_W_APPSTORE_URL
+    },
+    notes: [
+      'Official Efun Thailand top-up (th.efunsea.com/recharge) redirects to login; no public price list, so official Apple App Store prices are used.',
+      'THB = Apple App Store TH price (full in-app purchase list, every item).',
+      `USD = Apple App Store ${usd.cc ? usd.cc.toUpperCase() : 'KH/LA'} price (Apple storefront billed in USD; App Store US has no Yulgang W listing), matched to the TH item exactly by Apple offerName (Efun product id) or Apple item id. No FX conversion, no resellers.`,
+      'usd_in_product_name = the USD tier written in the official Efun product name (N.NNUSD Pack), informational only. The Apple KH/LA USD price is higher for some tiers (e.g. 5.99USD Pack is $6.99 on App Store KH); price_usd is the actual Apple storefront price.',
+      'Tael base/bonus amounts are not shown on the App Store; they are null with a reason.',
+      APPSTORE_FULL_IAP_NOTE,
+      'Live-fetch only; empty/unparseable upstream -> error (no static catalog).'
+    ]
+  } as unknown as RovPacksResponse
+}
+
 /**
- * Live Yulgang W packs from App Store TH product page.
- * Parses embedded JSON textPairs (preferred) or HTML IAP pairs.
- * Never hardcodes pack prices; upstream fail → throw.
+ * Live Yulgang W packs. Primary: full App Store TH IAP list (THB) + Apple USD storefront (USD).
+ * Fallback: App Store TH product page (top 10 only; USD from the official product name N.NNUSD Pack).
+ * Never hardcodes pack prices; upstream fail -> throw.
  */
 export async function fetchYulgangWPacks(options?: {
   signal?: AbortSignal
@@ -283,6 +387,14 @@ export async function fetchYulgangWPacks(options?: {
     }
     html = options.html
   } else {
+    try {
+      const thRows = await fetchAppStoreFullIap('th', String(YULGANG_W_APP_ID), 'en-GB', options?.signal)
+      if (thRows.some((r) => r.currency === 'THB')) {
+        return buildYulgangWFullResponse(thRows, await fetchUsdList(options?.signal))
+      }
+    } catch {
+      /* full list unavailable -> product page (top 10) */
+    }
     let response: Response
     try {
       response = await fetch(YULGANG_W_APPSTORE_URL, {
