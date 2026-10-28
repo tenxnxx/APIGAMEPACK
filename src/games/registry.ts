@@ -37,6 +37,7 @@ export type GameProvider =
   | 'where-winds-meet-netease'
   | 'realms-of-pixel-novasonic'
   | 'racing-master-netease'
+  | 'marvel-rivals-netease'
   | 'one-punch-man-strongest-fingerfun'
 export type GameRegistryEntry = {
   appId: number
@@ -221,6 +222,9 @@ export const GAME_REGISTRY: Record<string, GameRegistryEntry> = {
   'realmsofpixel': { appId: 6748809191, slug: 'realms-of-pixel', provider: 'realms-of-pixel-novasonic' },
   'realms-of-pixel-idle-rpg': { appId: 6748809191, slug: 'realms-of-pixel', provider: 'realms-of-pixel-novasonic' },
   rop: { appId: 6748809191, slug: 'realms-of-pixel', provider: 'realms-of-pixel-novasonic' },
+  'marvel-rivals': { appId: 2767030, slug: 'marvel-rivals', provider: 'marvel-rivals-netease' },
+  marvelrivals: { appId: 2767030, slug: 'marvel-rivals', provider: 'marvel-rivals-netease' },
+  'marvel-rivals-th': { appId: 2767030, slug: 'marvel-rivals', provider: 'marvel-rivals-netease' },
   'racing-master': { appId: 6736940411, slug: 'racing-master', provider: 'racing-master-netease' },
   racingmaster: { appId: 6736940411, slug: 'racing-master', provider: 'racing-master-netease' },
   'racing-master-sea': { appId: 6736940411, slug: 'racing-master', provider: 'racing-master-netease' },
@@ -416,6 +420,7 @@ const GAME_DISPLAY_NAMES: Record<string, string> = {
   'where-winds-meet': 'Where Winds Meet',
   'realms-of-pixel': 'Realms of Pixel: Idle RPG',
   'racing-master': 'Racing Master',
+  'marvel-rivals': 'Marvel Rivals',
   'one-punch-man-the-strongest': 'ONE PUNCH MAN: The Strongest',
   'bleach-brave-souls': 'BLEACH: Brave Souls',
   'bleach-soul-resonance': 'BLEACH: Soul Resonance',

@@ -4,6 +4,11 @@ import {
   OnePunchManUpstreamUnavailableError
 } from '../services/one-punch-man-packs.service'
 import {
+  MarvelRivalsInvalidUpstreamResponseError,
+  MarvelRivalsUpstreamUnavailableError,
+  fetchMarvelRivalsPacks
+} from '../services/marvel-rivals-packs.service'
+import {
   RacingMasterInvalidUpstreamResponseError,
   RacingMasterUpstreamUnavailableError,
   fetchRacingMasterPacks
@@ -507,6 +512,20 @@ export const gamesPacksRoutes = new Elysia().get(
           return status(502, { error: 'Upstream service unavailable' })
         }
         if (error instanceof OnePunchManInvalidUpstreamResponseError) {
+          return status(502, { error: 'Invalid upstream response' })
+        }
+        throw error
+      }
+    }
+
+    if (game.provider === 'marvel-rivals-netease') {
+      try {
+        return await fetchMarvelRivalsPacks()
+      } catch (error) {
+        if (error instanceof MarvelRivalsUpstreamUnavailableError) {
+          return status(502, { error: 'Upstream service unavailable' })
+        }
+        if (error instanceof MarvelRivalsInvalidUpstreamResponseError) {
           return status(502, { error: 'Invalid upstream response' })
         }
         throw error
