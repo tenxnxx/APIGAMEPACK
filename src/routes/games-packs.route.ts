@@ -1,4 +1,9 @@
 import {
+  RealmsOfPixelInvalidUpstreamResponseError,
+  RealmsOfPixelUpstreamUnavailableError,
+  fetchRealmsOfPixelPacks
+} from '../services/realms-of-pixel-packs.service'
+import {
   WhereWindsMeetInvalidUpstreamResponseError,
   WhereWindsMeetUpstreamUnavailableError,
   fetchWhereWindsMeetPacks
@@ -483,6 +488,20 @@ export const gamesPacksRoutes = new Elysia().get(
         throw error
       }
     } 
+
+    if (game.provider === 'realms-of-pixel-novasonic') {
+      try {
+        return await fetchRealmsOfPixelPacks()
+      } catch (error) {
+        if (error instanceof RealmsOfPixelUpstreamUnavailableError) {
+          return status(502, { error: 'Upstream service unavailable' })
+        }
+        if (error instanceof RealmsOfPixelInvalidUpstreamResponseError) {
+          return status(502, { error: 'Invalid upstream response' })
+        }
+        throw error
+      }
+    }
 
     if (game.provider === 'where-winds-meet-netease') {
       try {

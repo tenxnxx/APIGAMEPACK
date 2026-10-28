@@ -35,6 +35,7 @@ export type GameProvider =
   | 'arena-breakout-midasbuy'
   | 'sword-of-justice-netease'
   | 'where-winds-meet-netease'
+  | 'realms-of-pixel-novasonic'
 export type GameRegistryEntry = {
   appId: number
   slug: string
@@ -211,6 +212,10 @@ export const GAME_REGISTRY: Record<string, GameRegistryEntry> = {
   'where-winds-meet': { appId: 6472396866, slug: 'where-winds-meet', provider: 'where-winds-meet-netease' },
   'wherewindsmeet': { appId: 6472396866, slug: 'where-winds-meet', provider: 'where-winds-meet-netease' },
   wwm: { appId: 6472396866, slug: 'where-winds-meet', provider: 'where-winds-meet-netease' },
+  'realms-of-pixel': { appId: 6748809191, slug: 'realms-of-pixel', provider: 'realms-of-pixel-novasonic' },
+  'realmsofpixel': { appId: 6748809191, slug: 'realms-of-pixel', provider: 'realms-of-pixel-novasonic' },
+  'realms-of-pixel-idle-rpg': { appId: 6748809191, slug: 'realms-of-pixel', provider: 'realms-of-pixel-novasonic' },
+  rop: { appId: 6748809191, slug: 'realms-of-pixel', provider: 'realms-of-pixel-novasonic' },
   'draconia-saga': { appId: 6476590090, slug: 'draconia-saga', provider: 'draconia-sugarfun' },
   draconia: { appId: 6476590090, slug: 'draconia-saga', provider: 'draconia-sugarfun' },
   'draconia-saga-sea': { appId: 6476590090, slug: 'draconia-saga', provider: 'draconia-sugarfun' },
@@ -392,6 +397,7 @@ const GAME_DISPLAY_NAMES: Record<string, string> = {
   'arena-breakout': 'Arena Breakout: Mobile',
   'sword-of-justice': 'Sword of Justice',
   'where-winds-meet': 'Where Winds Meet',
+  'realms-of-pixel': 'Realms of Pixel: Idle RPG',
   'bleach-brave-souls': 'BLEACH: Brave Souls',
   'bleach-soul-resonance': 'BLEACH: Soul Resonance',
   'bleach-mirrors-high': 'BLEACH Mirrors High',
