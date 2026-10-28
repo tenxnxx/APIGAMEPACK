@@ -22,7 +22,7 @@ const MAX_PAGES = 100
 const RETRIES_429 = 3
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
-export type AppStoreFullIapRow = { id: string; name: string; price: number; priceFormatted: string; currency: string }
+export type AppStoreFullIapRow = { id: string; name: string; price: number; priceFormatted: string; currency: string; offerName?: string }
 
 export function parseAppStorePageUrl(url: string): { cc: string; id: string; l: string | null } | null {
   const m = url.match(/apps\.apple\.com\/([a-z]{2})\/app\/(?:[^/?#]+\/)?id(\d+)/i)
@@ -54,7 +54,9 @@ export function parseTopInAppsPage(json: unknown): AppStoreFullIapRow[] | null {
       name,
       price: offer.price,
       priceFormatted: offer.priceFormatted,
-      currency: typeof offer.currencyCode === 'string' ? offer.currencyCode : ''
+      currency: typeof offer.currencyCode === 'string' ? offer.currencyCode : '',
+      // Developer's own product id (e.g. NetEase goodsid) when Apple exposes it: exact cross-store matching.
+      ...(typeof a?.offerName === 'string' && a.offerName ? { offerName: a.offerName } : {})
     })
   }
   return out
