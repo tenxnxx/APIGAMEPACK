@@ -36,6 +36,7 @@ export type GameProvider =
   | 'sword-of-justice-netease'
   | 'where-winds-meet-netease'
   | 'realms-of-pixel-novasonic'
+  | 'racing-master-netease'
 export type GameRegistryEntry = {
   appId: number
   slug: string
@@ -216,6 +217,10 @@ export const GAME_REGISTRY: Record<string, GameRegistryEntry> = {
   'realmsofpixel': { appId: 6748809191, slug: 'realms-of-pixel', provider: 'realms-of-pixel-novasonic' },
   'realms-of-pixel-idle-rpg': { appId: 6748809191, slug: 'realms-of-pixel', provider: 'realms-of-pixel-novasonic' },
   rop: { appId: 6748809191, slug: 'realms-of-pixel', provider: 'realms-of-pixel-novasonic' },
+  'racing-master': { appId: 6736940411, slug: 'racing-master', provider: 'racing-master-netease' },
+  racingmaster: { appId: 6736940411, slug: 'racing-master', provider: 'racing-master-netease' },
+  'racing-master-sea': { appId: 6736940411, slug: 'racing-master', provider: 'racing-master-netease' },
+  'racingmastersea': { appId: 6736940411, slug: 'racing-master', provider: 'racing-master-netease' },
   'draconia-saga': { appId: 6476590090, slug: 'draconia-saga', provider: 'draconia-sugarfun' },
   draconia: { appId: 6476590090, slug: 'draconia-saga', provider: 'draconia-sugarfun' },
   'draconia-saga-sea': { appId: 6476590090, slug: 'draconia-saga', provider: 'draconia-sugarfun' },
@@ -398,6 +403,7 @@ const GAME_DISPLAY_NAMES: Record<string, string> = {
   'sword-of-justice': 'Sword of Justice',
   'where-winds-meet': 'Where Winds Meet',
   'realms-of-pixel': 'Realms of Pixel: Idle RPG',
+  'racing-master': 'Racing Master',
   'bleach-brave-souls': 'BLEACH: Brave Souls',
   'bleach-soul-resonance': 'BLEACH: Soul Resonance',
   'bleach-mirrors-high': 'BLEACH Mirrors High',

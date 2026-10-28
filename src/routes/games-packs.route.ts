@@ -1,4 +1,9 @@
 import {
+  RacingMasterInvalidUpstreamResponseError,
+  RacingMasterUpstreamUnavailableError,
+  fetchRacingMasterPacks
+} from '../services/racing-master-packs.service'
+import {
   RealmsOfPixelInvalidUpstreamResponseError,
   RealmsOfPixelUpstreamUnavailableError,
   fetchRealmsOfPixelPacks
@@ -488,6 +493,20 @@ export const gamesPacksRoutes = new Elysia().get(
         throw error
       }
     } 
+
+    if (game.provider === 'racing-master-netease') {
+      try {
+        return await fetchRacingMasterPacks()
+      } catch (error) {
+        if (error instanceof RacingMasterUpstreamUnavailableError) {
+          return status(502, { error: 'Upstream service unavailable' })
+        }
+        if (error instanceof RacingMasterInvalidUpstreamResponseError) {
+          return status(502, { error: 'Invalid upstream response' })
+        }
+        throw error
+      }
+    }
 
     if (game.provider === 'realms-of-pixel-novasonic') {
       try {
