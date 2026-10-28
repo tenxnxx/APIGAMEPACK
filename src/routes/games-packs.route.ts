@@ -148,6 +148,11 @@ import {
   fetchLastWarOfficialPacks
 } from '../services/lastwar-packs.service'
 import {
+  MagicChessInvalidUpstreamResponseError,
+  MagicChessUpstreamUnavailableError,
+  fetchMagicChessGoGoPacks
+} from '../services/magic-chess-go-go-packs.service'
+import {
   MlbbInvalidUpstreamResponseError,
   MlbbUpstreamUnavailableError,
   fetchMlbbPacks
@@ -256,6 +261,20 @@ export const gamesPacksRoutes = new Elysia().get(
           return status(502, { error: 'Upstream service unavailable' })
         }
         if (error instanceof ClashOfCrittersInvalidUpstreamResponseError) {
+          return status(502, { error: 'Invalid upstream response' })
+        }
+        throw error
+      }
+    }
+
+    if (game.provider === 'magic-chess-mobapay') {
+      try {
+        return await fetchMagicChessGoGoPacks()
+      } catch (error) {
+        if (error instanceof MagicChessUpstreamUnavailableError) {
+          return status(502, { error: 'Upstream service unavailable' })
+        }
+        if (error instanceof MagicChessInvalidUpstreamResponseError) {
           return status(502, { error: 'Invalid upstream response' })
         }
         throw error

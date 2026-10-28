@@ -38,6 +38,7 @@ export type GameProvider =
   | 'realms-of-pixel-novasonic'
   | 'racing-master-netease'
   | 'marvel-rivals-netease'
+  | 'magic-chess-mobapay'
   | 'one-punch-man-strongest-fingerfun'
 export type GameRegistryEntry = {
   appId: number
@@ -222,6 +223,9 @@ export const GAME_REGISTRY: Record<string, GameRegistryEntry> = {
   'realmsofpixel': { appId: 6748809191, slug: 'realms-of-pixel', provider: 'realms-of-pixel-novasonic' },
   'realms-of-pixel-idle-rpg': { appId: 6748809191, slug: 'realms-of-pixel', provider: 'realms-of-pixel-novasonic' },
   rop: { appId: 6748809191, slug: 'realms-of-pixel', provider: 'realms-of-pixel-novasonic' },
+  'magic-chess-go-go': { appId: 124526, slug: 'magic-chess-go-go', provider: 'magic-chess-mobapay' },
+  magicchess: { appId: 124526, slug: 'magic-chess-go-go', provider: 'magic-chess-mobapay' },
+  mcgg: { appId: 124526, slug: 'magic-chess-go-go', provider: 'magic-chess-mobapay' },
   'marvel-rivals': { appId: 2767030, slug: 'marvel-rivals', provider: 'marvel-rivals-netease' },
   marvelrivals: { appId: 2767030, slug: 'marvel-rivals', provider: 'marvel-rivals-netease' },
   'marvel-rivals-th': { appId: 2767030, slug: 'marvel-rivals', provider: 'marvel-rivals-netease' },
@@ -420,6 +424,7 @@ const GAME_DISPLAY_NAMES: Record<string, string> = {
   'where-winds-meet': 'Where Winds Meet',
   'realms-of-pixel': 'Realms of Pixel: Idle RPG',
   'racing-master': 'Racing Master',
+  'magic-chess-go-go': 'Magic Chess: Go Go',
   'marvel-rivals': 'Marvel Rivals',
   'one-punch-man-the-strongest': 'ONE PUNCH MAN: The Strongest',
   'bleach-brave-souls': 'BLEACH: Brave Souls',
