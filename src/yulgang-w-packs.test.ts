@@ -32,15 +32,17 @@ describe('Yulgang W packs (full App Store list: TH THB + USD storefront)', () =>
   const realFetch = globalThis.fetch
   afterEach(() => { globalThis.fetch = realFetch })
 
-  const item = (id: string, name: string, price: number, fmt: string, cur: string, offerName: string) => ({
-    id, attributes: { name, offerName, offers: [{ price, priceFormatted: fmt, currencyCode: cur }] }
+  const item = (id: string, name: string, price: number, fmt: string, cur: string, offerName: string, desc?: string) => ({
+    id, attributes: { name, offerName, isFamilyShareable: false, ...(desc ? { description: { standard: desc } } : {}), offers: [{ price, priceFormatted: fmt, currencyCode: cur }] }
   })
   const th = [
     item('6776494081', '29.99USD Pack', 1100, '฿1,100.00', 'THB', 'ae.aerxjhw.30usd.pack'),
-    item('6756173057', '0.99USD Pack', 35, '฿35.00', 'THB', 'ae.aerxjhw.1usd.base'),
+    item('6756173057', '0.99USD Pack', 35, '฿35.00', 'THB', 'ae.aerxjhw.1usd.base', 'Get 0.99USD pack after purchase'),
     item('6776607340', '0.99USD Special Pack', 35, '฿35.00', 'THB', 'ae.aerxjhw.1usd.base.efun'),
     item('6776999999', 'New Pack', 69, '฿69.00', 'THB', 'ae.aerxjhw.new')
   ]
+  // Same TH storefront in Thai (l=th): Thai names/descriptions, matched by offerName.
+  const thTh = [item('6756173057', 'แพ็ก USD0.99', 35, '฿35.00', 'THB', 'ae.aerxjhw.1usd.base', 'หลังซื้อจะได้รับแพ็ก USD0.99')]
   // KH storefront: same products in USD, different order; 'New Pack' absent.
   const kh = [
     item('6756173057', '0.99USD Pack', 0.99, '$0.99', 'USD', 'ae.aerxjhw.1usd.base'),
@@ -52,7 +54,7 @@ describe('Yulgang W packs (full App Store list: TH THB + USD storefront)', () =>
     globalThis.fetch = (async (input: unknown) => {
       const url = String(input)
       calls.push(url)
-      if (url.includes('/catalog/th/apps/6756002784/top-in-apps')) return Response.json({ data: th })
+      if (url.includes('/catalog/th/apps/6756002784/top-in-apps')) return Response.json({ data: /[?&]l=th(&|$)/.test(url) ? thTh : th })
       if (url.includes('/catalog/kh/apps/6756002784/top-in-apps'))
         return khStatus === 200 ? Response.json({ data: kh }) : new Response('x', { status: khStatus })
       if (url.includes('/catalog/la/apps/6756002784/top-in-apps')) return new Response('x', { status: 404 })
@@ -79,6 +81,22 @@ describe('Yulgang W packs (full App Store list: TH THB + USD storefront)', () =>
     expect(packs[1].usd_in_product_name).toBeNull()
     expect(body.categories[1].packs[0]).toMatchObject({ name: '0.99USD Special Pack', price_thb: 35, price_usd: 0.99 })
     expect(body.sources.usd).toContain('/catalog/kh/')
+  })
+
+  it('pack details: Apple description (Thai + English) and Thai name, Tael null with reason', async () => {
+    mock()
+    const body: any = await fetchYulgangWPacks()
+    const p = body.categories[0].packs[0]
+    expect(p).toMatchObject({
+      name: '0.99USD Pack', name_th: 'แพ็ก USD0.99',
+      description_th: 'หลังซื้อจะได้รับแพ็ก USD0.99', description_en: 'Get 0.99USD pack after purchase',
+      description: 'หลังซื้อจะได้รับแพ็ก USD0.99 / Get 0.99USD pack after purchase', family_shareable: false
+    })
+    expect(p.base_null_reason).toContain('Tael')
+    const noDesc = body.categories[0].packs.find((x: any) => x.name === 'New Pack')
+    expect(noDesc.description).toBeNull()
+    expect(typeof noDesc.description_null_reason).toBe('string')
+    expect(typeof noDesc.description_th_null_reason).toBe('string')
   })
 
   it('never guesses USD from the name: unmatched item gets null USD with a reason', async () => {

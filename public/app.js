@@ -187,6 +187,12 @@ function renderPackRow(pack) {
         ? `${formatNumber(pack.baseItemAmount)} + ${formatNumber(pack.bonusItemAmount)} (${formatNumber(pack.totalItemAmount)})`
         : formatNumber(pack.totalItemAmount ?? pack.baseItemAmount)
 
+  // Amount unknown (not item pack): show the official null reason instead of a bare dash.
+  const amountReason =
+    pack.item_pack !== true && pack.baseItemAmount == null && pack.base_null_reason
+      ? `<div class="meta">${escapeHtml(pack.base_null_reason)}</div>`
+      : ''
+
   const issues =
     Array.isArray(pack.issues) && pack.issues.length
       ? `<div class="issues">${escapeHtml(pack.issues.join(' · '))}</div>`
@@ -205,11 +211,12 @@ function renderPackRow(pack) {
   return `<tr>
     <td>
       <strong>${escapeHtml(pack.name ?? '—')}</strong>
+      ${pack.name_th && pack.name_th !== pack.name ? `<div class="meta">${escapeHtml(pack.name_th)}</div>` : ''}
       <div class="meta">ID ${escapeHtml(pack.id ?? '—')}</div>
       ${desc}
       ${issues}
     </td>
-    <td class="num">${escapeHtml(amounts)}</td>
+    <td class="num">${escapeHtml(amounts)}${amountReason}</td>
     <td class="num">${priceHtml}</td>
     <td class="meta">${escapeHtml(sources || '—')}</td>
   </tr>`

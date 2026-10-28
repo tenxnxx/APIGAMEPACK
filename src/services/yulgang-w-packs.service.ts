@@ -10,7 +10,7 @@ const BROWSER_UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36'
 
 const TAEL_NULL_REASON =
-  'App Store IAP list shows only the product name and price, not Tael amounts; the official Efun store that shows them requires login.'
+  'Tael amount not published: the App Store item only says: Get N.NNUSD pack after purchase (no Tael count), the official Efun store requires login, and no official page lists Tael per App Store tier.'
 
 export class YulgangWUpstreamUnavailableError extends Error {
   constructor(message = 'Yulgang W App Store upstream unavailable') {
@@ -306,7 +306,11 @@ export function matchYulgangWUsd(rows: AppStoreFullIapRow[], th: AppStoreFullIap
 }
 
 /** Response from the full App Store TH list (THB) + an Apple USD storefront (USD), matched by offerName / item id. */
-export function buildYulgangWFullResponse(thRows: AppStoreFullIapRow[], usd: UsdList): RovPacksResponse {
+export function buildYulgangWFullResponse(
+  thRows: AppStoreFullIapRow[],
+  usd: UsdList,
+  thai: { rows: AppStoreFullIapRow[] } | { rows: null; reason: string } = { rows: null, reason: 'Thai-language App Store list not requested' }
+): RovPacksResponse {
   const thb = thRows.filter((r) => r.currency === 'THB' || r.currency === '')
   const toPack = (r: AppStoreFullIapRow) => {
     const m = usd.cc ? matchYulgangWUsd(usd.rows, r) : null
@@ -314,9 +318,20 @@ export function buildYulgangWFullResponse(thRows: AppStoreFullIapRow[], usd: Usd
     const usdReason = usd.cc
       ? m ? undefined : `not found on App Store ${usd.cc.toUpperCase()} (USD storefront) by offerName/Apple item id`
       : `App Store USD storefront list unavailable (${'reason' in usd ? usd.reason : 'unknown'}); App Store US has no Yulgang W listing`
+    const thLang = thai.rows ? thai.rows.find((x) => (r.offerName && x.offerName === r.offerName) || x.id === r.id) : undefined
+    const descTh = thLang?.description ?? null
+    const descEn = r.description ?? null
+    const description = [descTh, descEn].filter(Boolean).join(' / ') || null
     return {
       id: Number(r.id) || packNameToId(r.name),
       name: r.name,
+      name_th: thLang?.name ?? null,
+      description,
+      description_th: descTh,
+      description_en: descEn,
+      ...(description ? {} : { description_null_reason: 'Apple App Store has no description text for this item' }),
+      ...(descTh ? {} : { description_th_null_reason: thai.rows ? 'not in the Thai-language App Store TH list' : `Thai-language App Store TH list unavailable (${'reason' in thai ? thai.reason : ''})` }),
+      family_shareable: typeof r.familyShareable === 'boolean' ? r.familyShareable : null,
       apple_item_id: r.id || null,
       product_id: r.offerName ?? null,
       baseItemAmount: null,
@@ -363,6 +378,7 @@ export function buildYulgangWFullResponse(thRows: AppStoreFullIapRow[], usd: Usd
       `USD = Apple App Store ${usd.cc ? usd.cc.toUpperCase() : 'KH/LA'} price (Apple storefront billed in USD; App Store US has no Yulgang W listing), matched to the TH item exactly by Apple offerName (Efun product id) or Apple item id. No FX conversion, no resellers.`,
       'usd_in_product_name = the USD tier written in the official Efun product name (N.NNUSD Pack), informational only. The Apple KH/LA USD price is higher for some tiers (e.g. 5.99USD Pack is $6.99 on App Store KH); price_usd is the actual Apple storefront price.',
       'Tael base/bonus amounts are not shown on the App Store; they are null with a reason.',
+      'description = Apple App Store item description (Thai from App Store TH l=th, then English), name_th = Thai item name; developer-written text, not edited.',
       APPSTORE_FULL_IAP_NOTE,
       'Live-fetch only; empty/unparseable upstream -> error (no static catalog).'
     ]
@@ -390,7 +406,14 @@ export async function fetchYulgangWPacks(options?: {
     try {
       const thRows = await fetchAppStoreFullIap('th', String(YULGANG_W_APP_ID), 'en-GB', options?.signal)
       if (thRows.some((r) => r.currency === 'THB')) {
-        return buildYulgangWFullResponse(thRows, await fetchUsdList(options?.signal))
+        const usd = await fetchUsdList(options?.signal)
+        let thai: { rows: AppStoreFullIapRow[] } | { rows: null; reason: string }
+        try {
+          thai = { rows: await fetchAppStoreFullIap('th', String(YULGANG_W_APP_ID), 'th', options?.signal) }
+        } catch (e) {
+          thai = { rows: null, reason: e instanceof Error ? e.message : String(e) }
+        }
+        return buildYulgangWFullResponse(thRows, usd, thai)
       }
     } catch {
       /* full list unavailable -> product page (top 10) */
