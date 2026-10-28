@@ -7,7 +7,7 @@ export type GameProvider =
   | 'pubgm-midasbuy'
   | 'efootball-codashop-ios'
   | 'clash-of-critters-farlight'
-  | 'mlbb-codashop'
+  | 'mlbb-mobapay'
   | 'cookierun-classic-appstore'
   | 'cookierun-classic-24buym'
   | 'lastwar-24buym'
@@ -103,10 +103,13 @@ export const GAME_REGISTRY: Record<string, GameRegistryEntry> = {
     provider: 'clash-of-critters-farlight'
   },
   'mobile-legends': {
-    appId: 19,
+    appId: 100000,
     slug: 'mobile-legends',
-    provider: 'mlbb-codashop'
+    provider: 'mlbb-mobapay'
   },
+  'mlbb': { appId: 100000, slug: 'mobile-legends', provider: 'mlbb-mobapay' },
+  'mobile-legends-bang-bang': { appId: 100000, slug: 'mobile-legends', provider: 'mlbb-mobapay' },
+  'mlbb-th': { appId: 100000, slug: 'mobile-legends', provider: 'mlbb-mobapay' },
   'lastwar-24buym': {
     appId: 24002,
     slug: 'lastwar-24buym',
@@ -390,7 +393,7 @@ const GAME_DISPLAY_NAMES: Record<string, string> = {
   'pubg-mobile': 'PUBG Mobile',
   efootball: 'eFootball (iOS)',
   'clash-of-critters': 'Clash of Critters',
-  'mobile-legends': 'Mobile Legends',
+  'mobile-legends': 'Mobile Legends: Bang Bang',
   'lastwar-24buym': 'Last War (24buym)',
   'cookierun-classic': 'Cookie Run: Classic',
   'cookierun-classic-24buym': 'Cookie Run: Classic (24buym)',

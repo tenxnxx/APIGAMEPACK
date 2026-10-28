@@ -145,7 +145,7 @@ import {
 import {
   MlbbInvalidUpstreamResponseError,
   MlbbUpstreamUnavailableError,
-  fetchMlbbCodashopPacks
+  fetchMlbbPacks
 } from '../services/mlbb-packs.service'
 import {
   PubgmInvalidUpstreamResponseError,
@@ -257,9 +257,9 @@ export const gamesPacksRoutes = new Elysia().get(
       }
     }
 
-    if (game.provider === 'mlbb-codashop') {
+    if (game.provider === 'mlbb-mobapay') {
       try {
-        return await fetchMlbbCodashopPacks()
+        return await fetchMlbbPacks()
       } catch (error) {
         if (error instanceof MlbbUpstreamUnavailableError) {
           return status(502, { error: 'Upstream service unavailable' })
