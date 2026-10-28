@@ -1,4 +1,9 @@
 import {
+  WhereWindsMeetInvalidUpstreamResponseError,
+  WhereWindsMeetUpstreamUnavailableError,
+  fetchWhereWindsMeetPacks
+} from '../services/where-winds-meet-packs.service'
+import {
   SwordOfJusticeInvalidUpstreamResponseError,
   SwordOfJusticeUpstreamUnavailableError,
   fetchSwordOfJusticePacks
@@ -478,6 +483,20 @@ export const gamesPacksRoutes = new Elysia().get(
         throw error
       }
     } 
+
+    if (game.provider === 'where-winds-meet-netease') {
+      try {
+        return await fetchWhereWindsMeetPacks()
+      } catch (error) {
+        if (error instanceof WhereWindsMeetUpstreamUnavailableError) {
+          return status(502, { error: 'Upstream service unavailable' })
+        }
+        if (error instanceof WhereWindsMeetInvalidUpstreamResponseError) {
+          return status(502, { error: 'Invalid upstream response' })
+        }
+        throw error
+      }
+    }
 
     if (game.provider === 'sword-of-justice-netease') {
       try {
