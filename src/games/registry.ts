@@ -38,6 +38,7 @@ export type GameProvider =
   | 'realms-of-pixel-novasonic'
   | 'racing-master-netease'
   | 'marvel-rivals-netease'
+  | 'love-and-deepspace-appstore'
   | 'magic-chess-mobapay'
   | 'one-punch-man-strongest-fingerfun'
 export type GameRegistryEntry = {
@@ -226,6 +227,9 @@ export const GAME_REGISTRY: Record<string, GameRegistryEntry> = {
   'magic-chess-go-go': { appId: 124526, slug: 'magic-chess-go-go', provider: 'magic-chess-mobapay' },
   magicchess: { appId: 124526, slug: 'magic-chess-go-go', provider: 'magic-chess-mobapay' },
   mcgg: { appId: 124526, slug: 'magic-chess-go-go', provider: 'magic-chess-mobapay' },
+  'love-and-deepspace': { appId: 6443467666, slug: 'love-and-deepspace', provider: 'love-and-deepspace-appstore' },
+  loveanddeepspace: { appId: 6443467666, slug: 'love-and-deepspace', provider: 'love-and-deepspace-appstore' },
+  lads: { appId: 6443467666, slug: 'love-and-deepspace', provider: 'love-and-deepspace-appstore' },
   'marvel-rivals': { appId: 2767030, slug: 'marvel-rivals', provider: 'marvel-rivals-netease' },
   marvelrivals: { appId: 2767030, slug: 'marvel-rivals', provider: 'marvel-rivals-netease' },
   'marvel-rivals-th': { appId: 2767030, slug: 'marvel-rivals', provider: 'marvel-rivals-netease' },
@@ -425,6 +429,7 @@ const GAME_DISPLAY_NAMES: Record<string, string> = {
   'realms-of-pixel': 'Realms of Pixel: Idle RPG',
   'racing-master': 'Racing Master',
   'magic-chess-go-go': 'Magic Chess: Go Go',
+  'love-and-deepspace': 'Love and Deepspace',
   'marvel-rivals': 'Marvel Rivals',
   'one-punch-man-the-strongest': 'ONE PUNCH MAN: The Strongest',
   'bleach-brave-souls': 'BLEACH: Brave Souls',

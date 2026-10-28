@@ -148,6 +148,11 @@ import {
   fetchLastWarOfficialPacks
 } from '../services/lastwar-packs.service'
 import {
+  LoveAndDeepspaceInvalidUpstreamResponseError,
+  LoveAndDeepspaceUpstreamUnavailableError,
+  fetchLoveAndDeepspacePacks
+} from '../services/love-and-deepspace-packs.service'
+import {
   MagicChessInvalidUpstreamResponseError,
   MagicChessUpstreamUnavailableError,
   fetchMagicChessGoGoPacks
@@ -261,6 +266,20 @@ export const gamesPacksRoutes = new Elysia().get(
           return status(502, { error: 'Upstream service unavailable' })
         }
         if (error instanceof ClashOfCrittersInvalidUpstreamResponseError) {
+          return status(502, { error: 'Invalid upstream response' })
+        }
+        throw error
+      }
+    }
+
+    if (game.provider === 'love-and-deepspace-appstore') {
+      try {
+        return await fetchLoveAndDeepspacePacks()
+      } catch (error) {
+        if (error instanceof LoveAndDeepspaceUpstreamUnavailableError) {
+          return status(502, { error: 'Upstream service unavailable' })
+        }
+        if (error instanceof LoveAndDeepspaceInvalidUpstreamResponseError) {
           return status(502, { error: 'Invalid upstream response' })
         }
         throw error
