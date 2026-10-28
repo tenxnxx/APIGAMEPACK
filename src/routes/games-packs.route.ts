@@ -1,4 +1,9 @@
 import {
+  SwordOfJusticeInvalidUpstreamResponseError,
+  SwordOfJusticeUpstreamUnavailableError,
+  fetchSwordOfJusticePacks
+} from '../services/sword-of-justice-packs.service'
+import {
   ArenaBreakoutInvalidUpstreamResponseError,
   ArenaBreakoutUpstreamUnavailableError,
   fetchArenaBreakoutPacks
@@ -473,6 +478,20 @@ export const gamesPacksRoutes = new Elysia().get(
         throw error
       }
     } 
+
+    if (game.provider === 'sword-of-justice-netease') {
+      try {
+        return await fetchSwordOfJusticePacks()
+      } catch (error) {
+        if (error instanceof SwordOfJusticeUpstreamUnavailableError) {
+          return status(502, { error: 'Upstream service unavailable' })
+        }
+        if (error instanceof SwordOfJusticeInvalidUpstreamResponseError) {
+          return status(502, { error: 'Invalid upstream response' })
+        }
+        throw error
+      }
+    }
 
     if (game.provider === 'arena-breakout-midasbuy') {
       try {

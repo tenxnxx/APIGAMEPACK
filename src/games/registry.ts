@@ -33,6 +33,7 @@ export type GameProvider =
   | 'draconia-sugarfun'
   | 'dnm-classic-mobapay'
   | 'arena-breakout-midasbuy'
+  | 'sword-of-justice-netease'
 export type GameRegistryEntry = {
   appId: number
   slug: string
@@ -203,6 +204,9 @@ export const GAME_REGISTRY: Record<string, GameRegistryEntry> = {
   'arena-breakout': { appId: 1560765304, slug: 'arena-breakout', provider: 'arena-breakout-midasbuy' },
   'arena-breakout-mobile': { appId: 1560765304, slug: 'arena-breakout', provider: 'arena-breakout-midasbuy' },
   'abm': { appId: 1560765304, slug: 'arena-breakout', provider: 'arena-breakout-midasbuy' },
+  'sword-of-justice': { appId: 6743792504, slug: 'sword-of-justice', provider: 'sword-of-justice-netease' },
+  'swordofjustice': { appId: 6743792504, slug: 'sword-of-justice', provider: 'sword-of-justice-netease' },
+  soj: { appId: 6743792504, slug: 'sword-of-justice', provider: 'sword-of-justice-netease' },
   'draconia-saga': { appId: 6476590090, slug: 'draconia-saga', provider: 'draconia-sugarfun' },
   draconia: { appId: 6476590090, slug: 'draconia-saga', provider: 'draconia-sugarfun' },
   'draconia-saga-sea': { appId: 6476590090, slug: 'draconia-saga', provider: 'draconia-sugarfun' },
@@ -382,6 +386,7 @@ const GAME_DISPLAY_NAMES: Record<string, string> = {
   'draconia-saga': 'Draconia Saga',
   'dragon-nest-m-classic': 'Dragon Nest M: Classic',
   'arena-breakout': 'Arena Breakout: Mobile',
+  'sword-of-justice': 'Sword of Justice',
   'bleach-brave-souls': 'BLEACH: Brave Souls',
   'bleach-soul-resonance': 'BLEACH: Soul Resonance',
   'bleach-mirrors-high': 'BLEACH Mirrors High',
