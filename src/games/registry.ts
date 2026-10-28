@@ -37,6 +37,7 @@ export type GameProvider =
   | 'where-winds-meet-netease'
   | 'realms-of-pixel-novasonic'
   | 'racing-master-netease'
+  | 'one-punch-man-strongest-fingerfun'
 export type GameRegistryEntry = {
   appId: number
   slug: string
@@ -221,6 +222,14 @@ export const GAME_REGISTRY: Record<string, GameRegistryEntry> = {
   racingmaster: { appId: 6736940411, slug: 'racing-master', provider: 'racing-master-netease' },
   'racing-master-sea': { appId: 6736940411, slug: 'racing-master', provider: 'racing-master-netease' },
   'racingmastersea': { appId: 6736940411, slug: 'racing-master', provider: 'racing-master-netease' },
+  'one-punch-man-the-strongest': { appId: 1491275510, slug: 'one-punch-man-the-strongest', provider: 'one-punch-man-strongest-fingerfun' },
+  'one-punch-man': { appId: 1491275510, slug: 'one-punch-man-the-strongest', provider: 'one-punch-man-strongest-fingerfun' },
+  'onepunchman': { appId: 1491275510, slug: 'one-punch-man-the-strongest', provider: 'one-punch-man-strongest-fingerfun' },
+  'opm': { appId: 1491275510, slug: 'one-punch-man-the-strongest', provider: 'one-punch-man-strongest-fingerfun' },
+  'opm-the-strongest': { appId: 1491275510, slug: 'one-punch-man-the-strongest', provider: 'one-punch-man-strongest-fingerfun' },
+  'opmts': { appId: 1491275510, slug: 'one-punch-man-the-strongest', provider: 'one-punch-man-strongest-fingerfun' },
+  'opm-strongest': { appId: 1491275510, slug: 'one-punch-man-the-strongest', provider: 'one-punch-man-strongest-fingerfun' },
+  'onepunchman-the-strongest': { appId: 1491275510, slug: 'one-punch-man-the-strongest', provider: 'one-punch-man-strongest-fingerfun' },
   'draconia-saga': { appId: 6476590090, slug: 'draconia-saga', provider: 'draconia-sugarfun' },
   draconia: { appId: 6476590090, slug: 'draconia-saga', provider: 'draconia-sugarfun' },
   'draconia-saga-sea': { appId: 6476590090, slug: 'draconia-saga', provider: 'draconia-sugarfun' },
@@ -404,6 +413,7 @@ const GAME_DISPLAY_NAMES: Record<string, string> = {
   'where-winds-meet': 'Where Winds Meet',
   'realms-of-pixel': 'Realms of Pixel: Idle RPG',
   'racing-master': 'Racing Master',
+  'one-punch-man-the-strongest': 'ONE PUNCH MAN: The Strongest',
   'bleach-brave-souls': 'BLEACH: Brave Souls',
   'bleach-soul-resonance': 'BLEACH: Soul Resonance',
   'bleach-mirrors-high': 'BLEACH Mirrors High',

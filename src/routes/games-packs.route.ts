@@ -1,4 +1,9 @@
 import {
+  fetchOnePunchManPacks,
+  OnePunchManInvalidUpstreamResponseError,
+  OnePunchManUpstreamUnavailableError
+} from '../services/one-punch-man-packs.service'
+import {
   RacingMasterInvalidUpstreamResponseError,
   RacingMasterUpstreamUnavailableError,
   fetchRacingMasterPacks
@@ -493,6 +498,20 @@ export const gamesPacksRoutes = new Elysia().get(
         throw error
       }
     } 
+
+    if (game.provider === 'one-punch-man-strongest-fingerfun') {
+      try {
+        return await fetchOnePunchManPacks()
+      } catch (error) {
+        if (error instanceof OnePunchManUpstreamUnavailableError) {
+          return status(502, { error: 'Upstream service unavailable' })
+        }
+        if (error instanceof OnePunchManInvalidUpstreamResponseError) {
+          return status(502, { error: 'Invalid upstream response' })
+        }
+        throw error
+      }
+    }
 
     if (game.provider === 'racing-master-netease') {
       try {
