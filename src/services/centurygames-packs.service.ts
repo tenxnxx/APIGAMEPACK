@@ -21,7 +21,7 @@ export type CenturyGameConfig = {
   categoryName: string
 }
 
-type CenturyPackage = {
+export type CenturyPackage = {
   product_id?: string
   package_display_name?: string
   main_number?: number
@@ -30,7 +30,7 @@ type CenturyPackage = {
   items?: Array<{ item_number?: number }>
 }
 
-type CenturyPackagesPayload = {
+export type CenturyPackagesPayload = {
   code: number
   msg?: string
   data?: {
@@ -152,7 +152,7 @@ function mapDualPack(
   }
 }
 
-async function fetchPackagesPayload(
+export async function fetchPackagesPayload(
   config: CenturyGameConfig,
   currency: string,
   signal: AbortSignal,
@@ -203,7 +203,7 @@ async function fetchPackagesPayload(
   }
 }
 
-function requireConfigList(
+export function requireConfigList(
   payload: CenturyPackagesPayload,
   label: string
 ): CenturyPackage[] {
