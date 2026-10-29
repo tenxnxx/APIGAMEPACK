@@ -41,6 +41,7 @@ export type GameProvider =
   | 'love-and-deepspace-appstore'
   | 'lineage-w-ncvshop'
   | 'identity-v-gameclub'
+  | 'haikyu-fly-high-garena'
   | 'magic-chess-mobapay'
   | 'one-punch-man-strongest-fingerfun'
 export type GameRegistryEntry = {
@@ -238,6 +239,9 @@ export const GAME_REGISTRY: Record<string, GameRegistryEntry> = {
   'identity-v': { appId: 1347780764, slug: 'identity-v', provider: 'identity-v-gameclub' },
   identityv: { appId: 1347780764, slug: 'identity-v', provider: 'identity-v-gameclub' },
   idv: { appId: 1347780764, slug: 'identity-v', provider: 'identity-v-gameclub' },
+  'haikyu-fly-high': { appId: 100153, slug: 'haikyu-fly-high', provider: 'haikyu-fly-high-garena' },
+  haikyuflyhigh: { appId: 100153, slug: 'haikyu-fly-high', provider: 'haikyu-fly-high-garena' },
+  haikyu: { appId: 100153, slug: 'haikyu-fly-high', provider: 'haikyu-fly-high-garena' },
   'marvel-rivals': { appId: 2767030, slug: 'marvel-rivals', provider: 'marvel-rivals-netease' },
   marvelrivals: { appId: 2767030, slug: 'marvel-rivals', provider: 'marvel-rivals-netease' },
   'marvel-rivals-th': { appId: 2767030, slug: 'marvel-rivals', provider: 'marvel-rivals-netease' },
@@ -440,6 +444,7 @@ const GAME_DISPLAY_NAMES: Record<string, string> = {
   'love-and-deepspace': 'Love and Deepspace',
   'lineage-w': 'Lineage W',
   'identity-v': 'Identity V',
+  'haikyu-fly-high': 'HAIKYU!! FLY HIGH',
   'marvel-rivals': 'Marvel Rivals',
   'one-punch-man-the-strongest': 'ONE PUNCH MAN: The Strongest',
   'bleach-brave-souls': 'BLEACH: Brave Souls',

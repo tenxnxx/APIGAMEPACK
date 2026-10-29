@@ -153,6 +153,11 @@ import {
   fetchIdentityVPacks
 } from '../services/identity-v-packs.service'
 import {
+  HaikyuInvalidUpstreamResponseError,
+  HaikyuUpstreamUnavailableError,
+  fetchHaikyuFlyHighPacks
+} from '../services/haikyu-fly-high-packs.service'
+import {
   LineageWInvalidUpstreamResponseError,
   LineageWUpstreamUnavailableError,
   fetchLineageWPacks
@@ -276,6 +281,20 @@ export const gamesPacksRoutes = new Elysia().get(
           return status(502, { error: 'Upstream service unavailable' })
         }
         if (error instanceof ClashOfCrittersInvalidUpstreamResponseError) {
+          return status(502, { error: 'Invalid upstream response' })
+        }
+        throw error
+      }
+    }
+
+    if (game.provider === 'haikyu-fly-high-garena') {
+      try {
+        return await fetchHaikyuFlyHighPacks()
+      } catch (error) {
+        if (error instanceof HaikyuUpstreamUnavailableError) {
+          return status(502, { error: 'Upstream service unavailable' })
+        }
+        if (error instanceof HaikyuInvalidUpstreamResponseError) {
           return status(502, { error: 'Invalid upstream response' })
         }
         throw error
