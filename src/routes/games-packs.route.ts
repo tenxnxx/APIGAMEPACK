@@ -148,6 +148,11 @@ import {
   fetchLastWarOfficialPacks
 } from '../services/lastwar-packs.service'
 import {
+  LineageWInvalidUpstreamResponseError,
+  LineageWUpstreamUnavailableError,
+  fetchLineageWPacks
+} from '../services/lineage-w-packs.service'
+import {
   LoveAndDeepspaceInvalidUpstreamResponseError,
   LoveAndDeepspaceUpstreamUnavailableError,
   fetchLoveAndDeepspacePacks
@@ -266,6 +271,20 @@ export const gamesPacksRoutes = new Elysia().get(
           return status(502, { error: 'Upstream service unavailable' })
         }
         if (error instanceof ClashOfCrittersInvalidUpstreamResponseError) {
+          return status(502, { error: 'Invalid upstream response' })
+        }
+        throw error
+      }
+    }
+
+    if (game.provider === 'lineage-w-ncvshop') {
+      try {
+        return await fetchLineageWPacks()
+      } catch (error) {
+        if (error instanceof LineageWUpstreamUnavailableError) {
+          return status(502, { error: 'Upstream service unavailable' })
+        }
+        if (error instanceof LineageWInvalidUpstreamResponseError) {
           return status(502, { error: 'Invalid upstream response' })
         }
         throw error
