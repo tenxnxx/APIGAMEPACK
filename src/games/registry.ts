@@ -40,6 +40,7 @@ export type GameProvider =
   | 'marvel-rivals-netease'
   | 'love-and-deepspace-appstore'
   | 'lineage-w-ncvshop'
+  | 'identity-v-gameclub'
   | 'magic-chess-mobapay'
   | 'one-punch-man-strongest-fingerfun'
 export type GameRegistryEntry = {
@@ -234,6 +235,9 @@ export const GAME_REGISTRY: Record<string, GameRegistryEntry> = {
   'lineage-w': { appId: 6755233247, slug: 'lineage-w', provider: 'lineage-w-ncvshop' },
   lineagew: { appId: 6755233247, slug: 'lineage-w', provider: 'lineage-w-ncvshop' },
   linw: { appId: 6755233247, slug: 'lineage-w', provider: 'lineage-w-ncvshop' },
+  'identity-v': { appId: 1347780764, slug: 'identity-v', provider: 'identity-v-gameclub' },
+  identityv: { appId: 1347780764, slug: 'identity-v', provider: 'identity-v-gameclub' },
+  idv: { appId: 1347780764, slug: 'identity-v', provider: 'identity-v-gameclub' },
   'marvel-rivals': { appId: 2767030, slug: 'marvel-rivals', provider: 'marvel-rivals-netease' },
   marvelrivals: { appId: 2767030, slug: 'marvel-rivals', provider: 'marvel-rivals-netease' },
   'marvel-rivals-th': { appId: 2767030, slug: 'marvel-rivals', provider: 'marvel-rivals-netease' },
@@ -435,6 +439,7 @@ const GAME_DISPLAY_NAMES: Record<string, string> = {
   'magic-chess-go-go': 'Magic Chess: Go Go',
   'love-and-deepspace': 'Love and Deepspace',
   'lineage-w': 'Lineage W',
+  'identity-v': 'Identity V',
   'marvel-rivals': 'Marvel Rivals',
   'one-punch-man-the-strongest': 'ONE PUNCH MAN: The Strongest',
   'bleach-brave-souls': 'BLEACH: Brave Souls',

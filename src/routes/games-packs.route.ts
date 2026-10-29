@@ -148,6 +148,11 @@ import {
   fetchLastWarOfficialPacks
 } from '../services/lastwar-packs.service'
 import {
+  IdentityVInvalidUpstreamResponseError,
+  IdentityVUpstreamUnavailableError,
+  fetchIdentityVPacks
+} from '../services/identity-v-packs.service'
+import {
   LineageWInvalidUpstreamResponseError,
   LineageWUpstreamUnavailableError,
   fetchLineageWPacks
@@ -271,6 +276,20 @@ export const gamesPacksRoutes = new Elysia().get(
           return status(502, { error: 'Upstream service unavailable' })
         }
         if (error instanceof ClashOfCrittersInvalidUpstreamResponseError) {
+          return status(502, { error: 'Invalid upstream response' })
+        }
+        throw error
+      }
+    }
+
+    if (game.provider === 'identity-v-gameclub') {
+      try {
+        return await fetchIdentityVPacks()
+      } catch (error) {
+        if (error instanceof IdentityVUpstreamUnavailableError) {
+          return status(502, { error: 'Upstream service unavailable' })
+        }
+        if (error instanceof IdentityVInvalidUpstreamResponseError) {
           return status(502, { error: 'Invalid upstream response' })
         }
         throw error
