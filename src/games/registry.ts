@@ -42,6 +42,7 @@ export type GameProvider =
   | 'lineage-w-ncvshop'
   | 'identity-v-gameclub'
   | 'haikyu-fly-high-garena'
+  | 'ghost-soul-m-rgs'
   | 'magic-chess-mobapay'
   | 'one-punch-man-strongest-fingerfun'
 export type GameRegistryEntry = {
@@ -242,6 +243,10 @@ export const GAME_REGISTRY: Record<string, GameRegistryEntry> = {
   'haikyu-fly-high': { appId: 100153, slug: 'haikyu-fly-high', provider: 'haikyu-fly-high-garena' },
   haikyuflyhigh: { appId: 100153, slug: 'haikyu-fly-high', provider: 'haikyu-fly-high-garena' },
   haikyu: { appId: 100153, slug: 'haikyu-fly-high', provider: 'haikyu-fly-high-garena' },
+  'ghost-soul-m': { appId: 6747792469, slug: 'ghost-soul-m', provider: 'ghost-soul-m-rgs' },
+  ghostsoulm: { appId: 6747792469, slug: 'ghost-soul-m', provider: 'ghost-soul-m-rgs' },
+  gsm: { appId: 6747792469, slug: 'ghost-soul-m', provider: 'ghost-soul-m-rgs' },
+  'ghost-soul': { appId: 6747792469, slug: 'ghost-soul-m', provider: 'ghost-soul-m-rgs' },
   'marvel-rivals': { appId: 2767030, slug: 'marvel-rivals', provider: 'marvel-rivals-netease' },
   marvelrivals: { appId: 2767030, slug: 'marvel-rivals', provider: 'marvel-rivals-netease' },
   'marvel-rivals-th': { appId: 2767030, slug: 'marvel-rivals', provider: 'marvel-rivals-netease' },
@@ -445,6 +450,7 @@ const GAME_DISPLAY_NAMES: Record<string, string> = {
   'lineage-w': 'Lineage W',
   'identity-v': 'Identity V',
   'haikyu-fly-high': 'HAIKYU!! FLY HIGH',
+  'ghost-soul-m': 'Ghost Soul M',
   'marvel-rivals': 'Marvel Rivals',
   'one-punch-man-the-strongest': 'ONE PUNCH MAN: The Strongest',
   'bleach-brave-souls': 'BLEACH: Brave Souls',

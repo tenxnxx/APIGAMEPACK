@@ -158,6 +158,11 @@ import {
   fetchHaikyuFlyHighPacks
 } from '../services/haikyu-fly-high-packs.service'
 import {
+  GhostSoulMInvalidUpstreamResponseError,
+  GhostSoulMUpstreamUnavailableError,
+  fetchGhostSoulMPacks
+} from '../services/ghost-soul-m-packs.service'
+import {
   LineageWInvalidUpstreamResponseError,
   LineageWUpstreamUnavailableError,
   fetchLineageWPacks
@@ -281,6 +286,20 @@ export const gamesPacksRoutes = new Elysia().get(
           return status(502, { error: 'Upstream service unavailable' })
         }
         if (error instanceof ClashOfCrittersInvalidUpstreamResponseError) {
+          return status(502, { error: 'Invalid upstream response' })
+        }
+        throw error
+      }
+    }
+
+    if (game.provider === 'ghost-soul-m-rgs') {
+      try {
+        return await fetchGhostSoulMPacks()
+      } catch (error) {
+        if (error instanceof GhostSoulMUpstreamUnavailableError) {
+          return status(502, { error: 'Upstream service unavailable' })
+        }
+        if (error instanceof GhostSoulMInvalidUpstreamResponseError) {
           return status(502, { error: 'Invalid upstream response' })
         }
         throw error
