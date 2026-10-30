@@ -44,6 +44,11 @@ import {
   fetchDraconiaPacks
 } from '../services/draconia-saga-packs.service'
 import {
+  DunkCityInvalidUpstreamResponseError,
+  DunkCityUpstreamUnavailableError,
+  fetchDunkCityDynastyPacks
+} from '../services/dunk-city-dynasty-packs.service'
+import {
   DestinyRisingInvalidUpstreamResponseError,
   DestinyRisingUpstreamUnavailableError,
   fetchDestinyRisingPacks
@@ -763,6 +768,19 @@ export const gamesPacksRoutes = new Elysia().get(
       }
     }
 
+    if (game.provider === 'dunk-city-dynasty-netease') {
+      try {
+        return await fetchDunkCityDynastyPacks()
+      } catch (error) {
+        if (error instanceof DunkCityUpstreamUnavailableError) {
+          return status(502, { error: 'Upstream service unavailable' })
+        }
+        if (error instanceof DunkCityInvalidUpstreamResponseError) {
+          return status(502, { error: 'Invalid upstream response' })
+        }
+        throw error
+      }
+    }
     if (game.provider === 'destiny-rising-netease') {
       try {
         return await fetchDestinyRisingPacks()

@@ -44,6 +44,7 @@ export type GameProvider =
   | 'haikyu-fly-high-garena'
   | 'ghost-soul-m-rgs'
   | 'fairy-tail-wizard-chronicle-goodroid'
+  | 'dunk-city-dynasty-netease'
   | 'magic-chess-mobapay'
   | 'one-punch-man-strongest-fingerfun'
 export type GameRegistryEntry = {
@@ -248,6 +249,11 @@ export const GAME_REGISTRY: Record<string, GameRegistryEntry> = {
   ghostsoulm: { appId: 6747792469, slug: 'ghost-soul-m', provider: 'ghost-soul-m-rgs' },
   gsm: { appId: 6747792469, slug: 'ghost-soul-m', provider: 'ghost-soul-m-rgs' },
   'ghost-soul': { appId: 6747792469, slug: 'ghost-soul-m', provider: 'ghost-soul-m-rgs' },
+  'dunk-city-dynasty': { appId: 1555216030, slug: 'dunk-city-dynasty', provider: 'dunk-city-dynasty-netease' },
+  dunkcitydynasty: { appId: 1555216030, slug: 'dunk-city-dynasty', provider: 'dunk-city-dynasty-netease' },
+  dcd: { appId: 1555216030, slug: 'dunk-city-dynasty', provider: 'dunk-city-dynasty-netease' },
+  'dunk-city': { appId: 1555216030, slug: 'dunk-city-dynasty', provider: 'dunk-city-dynasty-netease' },
+  dunkcity: { appId: 1555216030, slug: 'dunk-city-dynasty', provider: 'dunk-city-dynasty-netease' },
   'fairy-tail-wizard-chronicle': { appId: 6746717958, slug: 'fairy-tail-wizard-chronicle', provider: 'fairy-tail-wizard-chronicle-goodroid' },
   fairytail: { appId: 6746717958, slug: 'fairy-tail-wizard-chronicle', provider: 'fairy-tail-wizard-chronicle-goodroid' },
   ftwc: { appId: 6746717958, slug: 'fairy-tail-wizard-chronicle', provider: 'fairy-tail-wizard-chronicle-goodroid' },
@@ -458,6 +464,7 @@ const GAME_DISPLAY_NAMES: Record<string, string> = {
   'haikyu-fly-high': 'HAIKYU!! FLY HIGH',
   'ghost-soul-m': 'Ghost Soul M',
   'fairy-tail-wizard-chronicle': 'FAIRY TAIL Wizard Chronicle',
+  'dunk-city-dynasty': 'Dunk City Dynasty',
   'marvel-rivals': 'Marvel Rivals',
   'one-punch-man-the-strongest': 'ONE PUNCH MAN: The Strongest',
   'bleach-brave-souls': 'BLEACH: Brave Souls',
