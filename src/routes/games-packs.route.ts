@@ -44,6 +44,11 @@ import {
   fetchDraconiaPacks
 } from '../services/draconia-saga-packs.service'
 import {
+  DragonicaLandverseInvalidUpstreamResponseError,
+  DragonicaLandverseUpstreamUnavailableError,
+  fetchDragonicaLandversePacks
+} from '../services/dragonica-landverse-packs.service'
+import {
   DreamLetheInvalidUpstreamResponseError,
   DreamLetheUpstreamUnavailableError,
   fetchDreamAndLetheRecordPacks
@@ -781,6 +786,19 @@ export const gamesPacksRoutes = new Elysia().get(
           return status(502, { error: 'Upstream service unavailable' })
         }
         if (error instanceof DreamLetheInvalidUpstreamResponseError) {
+          return status(502, { error: 'Invalid upstream response' })
+        }
+        throw error
+      }
+    }
+    if (game.provider === 'dragonica-landverse-maxion') {
+      try {
+        return await fetchDragonicaLandversePacks()
+      } catch (error) {
+        if (error instanceof DragonicaLandverseUpstreamUnavailableError) {
+          return status(502, { error: 'Upstream service unavailable' })
+        }
+        if (error instanceof DragonicaLandverseInvalidUpstreamResponseError) {
           return status(502, { error: 'Invalid upstream response' })
         }
         throw error

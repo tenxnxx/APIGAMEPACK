@@ -46,6 +46,7 @@ export type GameProvider =
   | 'fairy-tail-wizard-chronicle-goodroid'
   | 'dunk-city-dynasty-netease'
   | 'dream-and-lethe-record-vnggames'
+  | 'dragonica-landverse-maxion'
   | 'magic-chess-mobapay'
   | 'one-punch-man-strongest-fingerfun'
 export type GameRegistryEntry = {
@@ -255,6 +256,10 @@ export const GAME_REGISTRY: Record<string, GameRegistryEntry> = {
   dreamandletherecord: { appId: 6505037845, slug: 'dream-and-lethe-record', provider: 'dream-and-lethe-record-vnggames' },
   'dream-and-lethe': { appId: 6505037845, slug: 'dream-and-lethe-record', provider: 'dream-and-lethe-record-vnggames' },
   dlr: { appId: 6505037845, slug: 'dream-and-lethe-record', provider: 'dream-and-lethe-record-vnggames' },
+  'dragonica-landverse': { appId: 900101, slug: 'dragonica-landverse', provider: 'dragonica-landverse-maxion' },
+  dragonicalandverse: { appId: 900101, slug: 'dragonica-landverse', provider: 'dragonica-landverse-maxion' },
+  drlv: { appId: 900101, slug: 'dragonica-landverse', provider: 'dragonica-landverse-maxion' },
+  'dragonica-lv': { appId: 900101, slug: 'dragonica-landverse', provider: 'dragonica-landverse-maxion' },
   'dunk-city-dynasty': { appId: 1555216030, slug: 'dunk-city-dynasty', provider: 'dunk-city-dynasty-netease' },
   dunkcitydynasty: { appId: 1555216030, slug: 'dunk-city-dynasty', provider: 'dunk-city-dynasty-netease' },
   dcd: { appId: 1555216030, slug: 'dunk-city-dynasty', provider: 'dunk-city-dynasty-netease' },
@@ -472,6 +477,7 @@ const GAME_DISPLAY_NAMES: Record<string, string> = {
   'fairy-tail-wizard-chronicle': 'FAIRY TAIL Wizard Chronicle',
   'dunk-city-dynasty': 'Dunk City Dynasty',
   'dream-and-lethe-record': 'Dream and Lethe Record',
+  'dragonica-landverse': 'Dragonica Landverse',
   'marvel-rivals': 'Marvel Rivals',
   'one-punch-man-the-strongest': 'ONE PUNCH MAN: The Strongest',
   'bleach-brave-souls': 'BLEACH: Brave Souls',
