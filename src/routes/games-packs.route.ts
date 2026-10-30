@@ -163,6 +163,11 @@ import {
   fetchGhostSoulMPacks
 } from '../services/ghost-soul-m-packs.service'
 import {
+  FairyTailInvalidUpstreamResponseError,
+  FairyTailUpstreamUnavailableError,
+  fetchFairyTailWizardChroniclePacks
+} from '../services/fairy-tail-wizard-chronicle-packs.service'
+import {
   LineageWInvalidUpstreamResponseError,
   LineageWUpstreamUnavailableError,
   fetchLineageWPacks
@@ -286,6 +291,20 @@ export const gamesPacksRoutes = new Elysia().get(
           return status(502, { error: 'Upstream service unavailable' })
         }
         if (error instanceof ClashOfCrittersInvalidUpstreamResponseError) {
+          return status(502, { error: 'Invalid upstream response' })
+        }
+        throw error
+      }
+    }
+
+    if (game.provider === 'fairy-tail-wizard-chronicle-goodroid') {
+      try {
+        return await fetchFairyTailWizardChroniclePacks()
+      } catch (error) {
+        if (error instanceof FairyTailUpstreamUnavailableError) {
+          return status(502, { error: 'Upstream service unavailable' })
+        }
+        if (error instanceof FairyTailInvalidUpstreamResponseError) {
           return status(502, { error: 'Invalid upstream response' })
         }
         throw error
