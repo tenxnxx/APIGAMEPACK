@@ -44,6 +44,11 @@ import {
   fetchDraconiaPacks
 } from '../services/draconia-saga-packs.service'
 import {
+  DreamLetheInvalidUpstreamResponseError,
+  DreamLetheUpstreamUnavailableError,
+  fetchDreamAndLetheRecordPacks
+} from '../services/dream-and-lethe-record-packs.service'
+import {
   DunkCityInvalidUpstreamResponseError,
   DunkCityUpstreamUnavailableError,
   fetchDunkCityDynastyPacks
@@ -768,6 +773,19 @@ export const gamesPacksRoutes = new Elysia().get(
       }
     }
 
+    if (game.provider === 'dream-and-lethe-record-vnggames') {
+      try {
+        return await fetchDreamAndLetheRecordPacks()
+      } catch (error) {
+        if (error instanceof DreamLetheUpstreamUnavailableError) {
+          return status(502, { error: 'Upstream service unavailable' })
+        }
+        if (error instanceof DreamLetheInvalidUpstreamResponseError) {
+          return status(502, { error: 'Invalid upstream response' })
+        }
+        throw error
+      }
+    }
     if (game.provider === 'dunk-city-dynasty-netease') {
       try {
         return await fetchDunkCityDynastyPacks()
