@@ -100,4 +100,28 @@ describe('destiny rising', () => {
     mock({ [P]: () => Response.json({ code: '0300', msg: 'x', data: null }) })
     expect((await get()).status).toBe(502)
   })
+  it('US App Store down -> USD from KH by Apple item id; descriptions/contents present or null with reason', async () => {
+    const KH = US.map((r) => r)
+    mock({ [P]: () => Response.json(products), [A]: () => Response.json(acts), [API + 'th/']: page(TH), [API + 'us/']: () => new Response('nf', { status: 500 }), [API + 'kh/']: page(KH), 'https://apps.apple.com/us/': () => new Response('x', { status: 503 }) })
+    const body = (await (await get()).json()) as any
+    const [silver, pass, bundle] = body.categories
+    expect(silver.packs[0]).toMatchObject({ description_th: '60 Silver + โบนัส 6 Silver = 66 Silver', contents: [{ item: 'Silver', quantity: 66 }] })
+    expect(silver.packs[0].description_en).toContain('60 Silver + 6 bonus Silver = 66 Silver')
+    expect(silver.packs[1].description_en).toStartWith('300 Silver:')
+    expect(pass.packs.map((p: any) => [p.product_id, p.price_usd])).toEqual([['g108na.weekcard', 2.99], ['g108na.battlepass1', 4.99], ['g108na.battlepass3', 5], ['g108na.battlepass2', 9.99]])
+    expect(pass.packs[1].price_usd_source).toBe('apple-app-store-kh (item 20)')
+    expect(pass.packs[1]).toMatchObject({ item_pack: true, description_en: 'premuim battle pass', description_th: null, contents: null })
+    expect(pass.packs[1].description_th_null_reason).toContain('English only')
+    expect(pass.packs[1].contents_null_reason).toContain('not published')
+    expect(bundle.packs[0]).toMatchObject({ price_usd: 19.99, price_usd_source: 'apple-app-store-kh (item 30)' })
+    expect(body.sources.appstore_usd).toContain('/catalog/kh/')
+    expect(body.notes.join(' ')).toContain('App Store USD prices from KH')
+  })
+  it('no USD storefront at all -> App Store items USD null with reason, THB kept', async () => {
+    mock({ [P]: () => Response.json(products), [A]: () => Response.json(acts), [API + 'th/']: page(TH) })
+    const body = (await (await get()).json()) as any
+    const wk = body.categories[1].packs.find((p: any) => p.product_id === 'g108na.weekcard')
+    expect(wk).toMatchObject({ price_thb: 99, price_usd: null })
+    expect(wk.price_usd_null_reason).toContain('US/KH/LA/MM')
+  })
 })

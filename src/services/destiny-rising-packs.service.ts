@@ -152,6 +152,22 @@ async function fetchIapList(cc: 'th' | 'us', signal?: AbortSignal): Promise<IapL
   }
 }
 
+type UsdList = IapList & { cc: string }
+/** USD App Store list: US first, then the USD-priced KH / LA / MM storefronts (same Apple item ids / offerNames). */
+async function fetchUsdList(signal?: AbortSignal): Promise<UsdList> {
+  const us = await fetchIapList('us', signal)
+  if (us.rows && us.full) return { ...us, cc: 'us' }
+  const reasons = ['US: ' + (us.reason ?? 'top 10 only')]
+  for (const cc of ['kh', 'la', 'mm']) {
+    try {
+      const rows = (await fetchAppStoreFullIap(cc, String(DESTINY_RISING_APP_ID), null, signal)).filter((r) => r.currency === 'USD')
+      if (rows.length) return { rows, full: true, cc, reason: reasons.join('; ') }
+      reasons.push(`${cc.toUpperCase()}: no USD rows`)
+    } catch (e) { reasons.push(`${cc.toUpperCase()}: ${e instanceof Error ? e.message : String(e)}`) }
+  }
+  return us.rows ? { ...us, cc: 'us', reason: reasons.join('; ') } : { rows: null, full: false, cc: 'us', reason: reasons.join('; ') }
+}
+
 const nameKey = (n: string) => n.normalize('NFKC').toLowerCase().replace(/[^a-z0-9]+/g, '')
 /** Exact match by offerName; otherwise by Silver amount / name, refusing ambiguous (same name, different prices). */
 function matchIap(rows: AppStoreFullIapRow[] | null, productId: string | null, name: string): { row?: AppStoreFullIapRow; ambiguous?: number[]; by?: string } {
@@ -177,7 +193,8 @@ export async function fetchDestinyRisingPacks(options?: { signal?: AbortSignal }
   const actReason = 'Official activitys endpoint unavailable: ' + (actRaw?.__error ?? actRaw?.msg ?? 'bad shape')
   // Sequential: Apple rate-limits bursts.
   const th = await fetchIapList('th', signal)
-  const us = await fetchIapList('us', signal)
+  const us = await fetchUsdList(signal)
+  const usdCc = us.cc.toUpperCase()
   const neteaseIds = new Set(products.map((p) => p.goodsid))
 
   const discFields = (goodsid: string | null, appStoreOnly: boolean) => {
@@ -219,6 +236,12 @@ export async function fetchDestinyRisingPacks(options?: { signal?: AbortSignal }
       : th.rows ? `Official NetEase store has no THB; "${p.name}" not in App Store TH IAP list (${iapScope(th.full)})`
       : 'Official NetEase store has no THB; App Store TH unavailable: ' + th.reason
     if (isCur && !act) pack.bonus_null_reason = actReason
+    const tot = isCur ? p.base + (bonus ?? 0) : null
+    pack.description_en = isCur ? `${p.name.replace(/sliver/i, 'Silver')}: ${p.base} Silver + ${bonus ?? 0} bonus Silver = ${tot} Silver` : p.detail || p.name
+    pack.description_th = isCur ? `${p.base} Silver + โบนัส ${bonus ?? 0} Silver = ${tot} Silver` : null
+    if (!isCur) pack.description_th_null_reason = 'NetEase GamesClub publishes no Thai text for this item'
+    pack.contents = isCur ? [{ item: 'Silver', quantity: tot }] : null
+    if (!isCur) pack.contents_null_reason = 'Not itemised by the official store'
     if (!isCur) { pack.base_null_reason = 'Not a plain Silver amount'; pack.bonus_null_reason = 'No currency bonus on non-Silver items' }
     pack.prices = { THB: pack.price_thb, USD: pack.price_usd }
     return pack
@@ -256,17 +279,23 @@ export async function fetchDestinyRisingPacks(options?: { signal?: AbortSignal }
       description: `App Store in-app purchase "${r.name}"${pid ? ` (product ${pid})` : ''}; contents are not itemised by Apple or the NetEase web store`,
       image_url: null,
       price_thb: thb, price_thb_source: thb !== null ? `apple-app-store-th${r.id ? ` (item ${r.id})` : ''}` : null,
-      price_usd: usd, price_usd_source: usd !== null ? `apple-app-store-us${r.id ? ` (item ${r.id})` : ''}` : null,
+      price_usd: usd, price_usd_source: usd !== null ? `apple-app-store-${us.cc}${r.id ? ` (item ${r.id})` : ''}` : null,
       price: thb ?? usd ?? 0, currency: thb !== null ? 'THB' : usd !== null ? 'USD' : '',
       ...discFields(null, true)
     }
     if (k.pass_type) pack.pass_type = k.pass_type
+    const appleText = (pr.us?.description ?? pr.th?.description ?? '').trim()
+    pack.description_en = appleText || r.name
+    pack.description_th = null
+    pack.description_th_null_reason = 'Apple shows this item in English only on the TH storefront; the NetEase web store does not sell it'
+    pack.contents = null
+    pack.contents_null_reason = 'Apple lists only the item name and price tier (its description repeats the name); contents are shown in-game only and are not published by NetEase'
     pack.base_null_reason = (k.kind === 'pass' ? 'Pass' : 'Bundle') + ' item; not a plain Silver amount'
     pack.bonus_null_reason = 'No currency bonus on pass/bundle items'
     if (thb === null) pack.price_thb_null_reason = pr.ambTh ? `App Store TH lists "${r.name}" at several prices (${pr.ambTh.join(', ')}) and no item id is available to tell them apart`
       : th.rows ? `Not in App Store TH IAP list (${iapScope(th.full)})` : 'App Store TH unavailable: ' + th.reason
     if (usd === null) pack.price_usd_null_reason = pr.ambTh || pr.ambUs ? `"${r.name}" is listed at several prices; not guessing without Apple item ids`
-      : us.rows ? `Not in App Store US IAP list (${iapScope(us.full)})` : 'App Store US unavailable: ' + us.reason
+      : us.rows ? `Not in App Store ${usdCc} IAP list (${iapScope(us.full)})` : 'App Store USD storefronts (US/KH/LA/MM) unavailable: ' + us.reason
     pack.prices = { THB: pack.price_thb, USD: pack.price_usd }
     return pack
   })
@@ -283,14 +312,16 @@ export async function fetchDestinyRisingPacks(options?: { signal?: AbortSignal }
   const notes = [
     'Main: official NetEase GamesClub top-up (game code destinyrising, live products API). USD = product.price; base = pay_yuanbao; bonus = free amount + activitys GameClubBonus (alpha2=TH).',
     'The NetEase web store sells only Silver, in USD only (local_price has no TH). THB = official Apple App Store TH price of the same product, matched exactly by Apple offerName = NetEase goodsid (full App Store IAP list). No FX conversion, no resellers.',
-    'Battle Pass / Weekly Card / Growth Funds / bundles are sold only as App Store in-app purchases: THB from App Store TH, USD from App Store US, paired by Apple item id.',
+    'Battle Pass / Weekly Card / Growth Funds / bundles are sold only as App Store in-app purchases: THB from App Store TH, USD from App Store US (fallback KH / LA / MM, USD storefronts), paired by Apple item id / offerName.',
+    'description_en / description_th / contents: Silver packs from the official GamesClub amounts (base + bonus = total). App Store-only items: description_en = Apple\'s official item text; Apple and NetEase publish no Thai text or itemised contents, so description_th / contents are null with a reason.',
     'discount_price_thb / discount_price_usd / discount_until = official GameClub discount (activitys activity_type 27); price_thb / price_usd stay the list price.'
   ]
   if (act && act.count === 0) notes.push('Official activitys (alpha2=TH) currently lists no bonus or discount for Destiny: Rising.')
   if (!act) notes.push(actReason)
   notes.push(APPSTORE_FULL_IAP_NOTE)
   if (!th.full) notes.push('App Store TH: ' + (th.reason ?? 'top 10 only'))
-  if (!us.full) notes.push('App Store US: ' + (us.reason ?? 'top 10 only'))
+  if (us.cc !== 'us') notes.push(`App Store USD prices from ${usdCc} (US unavailable: ${us.reason})`)
+  else if (!us.full) notes.push('App Store US: ' + (us.reason ?? 'top 10 only'))
   return ({
     game: { id: DESTINY_RISING_APP_ID, slug: DESTINY_RISING_SLUG, name: 'Destiny: Rising', itemName: 'Silver', itemIcon: '' },
     categories,
@@ -300,6 +331,7 @@ export async function fetchDestinyRisingPacks(options?: { signal?: AbortSignal }
     sources: {
       products: DESTINY_RISING_PRODUCTS_API_URL, bonus: DESTINY_RISING_ACTIVITYS_API_URL, usd: DESTINY_RISING_PRODUCTS_API_URL,
       thb: `https://apps.apple.com/api/apps/v1/catalog/th/apps/${DESTINY_RISING_APP_ID}/top-in-apps`,
+      appstore_usd: `https://apps.apple.com/api/apps/v1/catalog/${us.cc}/apps/${DESTINY_RISING_APP_ID}/top-in-apps`,
       appstore_us: `https://apps.apple.com/api/apps/v1/catalog/us/apps/${DESTINY_RISING_APP_ID}/top-in-apps`,
       appstore_th_page: DESTINY_RISING_APPSTORE_TH, appstore_us_page: DESTINY_RISING_APPSTORE_US
     },
