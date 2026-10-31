@@ -39,6 +39,11 @@ import {
   fetchDnmPacks
 } from '../services/dnm-classic-packs.service'
 import {
+  CocInvalidUpstreamResponseError,
+  CocUpstreamUnavailableError,
+  fetchClashOfClansPacks
+} from '../services/clash-of-clans-packs.service'
+import {
   DraconiaInvalidUpstreamResponseError,
   DraconiaUpstreamUnavailableError,
   fetchDraconiaPacks
@@ -744,6 +749,20 @@ export const gamesPacksRoutes = new Elysia().get(
           return status(502, { error: 'Upstream service unavailable' })
         }
         if (error instanceof ArenaBreakoutInvalidUpstreamResponseError) {
+          return status(502, { error: 'Invalid upstream response' })
+        }
+        throw error
+      }
+    }
+
+    if (game.provider === 'clash-of-clans-appstore') {
+      try {
+        return await fetchClashOfClansPacks()
+      } catch (error) {
+        if (error instanceof CocUpstreamUnavailableError) {
+          return status(502, { error: 'Upstream service unavailable' })
+        }
+        if (error instanceof CocInvalidUpstreamResponseError) {
           return status(502, { error: 'Invalid upstream response' })
         }
         throw error

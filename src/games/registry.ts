@@ -32,6 +32,7 @@ export type GameProvider =
   | 'destiny-rising-netease'
   | 'draconia-sugarfun'
   | 'dnm-classic-mobapay'
+  | 'clash-of-clans-appstore'
   | 'arena-breakout-midasbuy'
   | 'sword-of-justice-netease'
   | 'where-winds-meet-netease'
@@ -222,6 +223,9 @@ export const GAME_REGISTRY: Record<string, GameRegistryEntry> = {
   dnmclassic: { appId: 6743824718, slug: 'dragon-nest-m-classic', provider: 'dnm-classic-mobapay' },
   dragonnestmclassic: { appId: 6743824718, slug: 'dragon-nest-m-classic', provider: 'dnm-classic-mobapay' },
   dnm: { appId: 6743824718, slug: 'dragon-nest-m-classic', provider: 'dnm-classic-mobapay' },
+  'clash-of-clans': { appId: 529479190, slug: 'clash-of-clans', provider: 'clash-of-clans-appstore' },
+  clashofclans: { appId: 529479190, slug: 'clash-of-clans', provider: 'clash-of-clans-appstore' },
+  'coc-supercell': { appId: 529479190, slug: 'clash-of-clans', provider: 'clash-of-clans-appstore' },
   'arena-breakout': { appId: 1560765304, slug: 'arena-breakout', provider: 'arena-breakout-midasbuy' },
   'arena-breakout-mobile': { appId: 1560765304, slug: 'arena-breakout', provider: 'arena-breakout-midasbuy' },
   'abm': { appId: 1560765304, slug: 'arena-breakout', provider: 'arena-breakout-midasbuy' },
@@ -466,6 +470,7 @@ const GAME_DISPLAY_NAMES: Record<string, string> = {
   'destiny-rising': 'Destiny: Rising',
   'draconia-saga': 'Draconia Saga',
   'dragon-nest-m-classic': 'Dragon Nest M: Classic',
+  'clash-of-clans': 'Clash of Clans',
   'arena-breakout': 'Arena Breakout: Mobile',
   'sword-of-justice': 'Sword of Justice',
   'where-winds-meet': 'Where Winds Meet',
