@@ -11,6 +11,7 @@ export type GameProvider =
   | 'cookierun-classic-appstore'
   | 'cookierun-classic-24buym'
   | 'cookierun-crumble-appstore'
+  | 'darkwar-survival-webshop'
   | 'lastwar-24buym'
   | 'heartopia-xd'
   | 'roblox-premiumfeatures'
@@ -167,6 +168,31 @@ export const GAME_REGISTRY: Record<string, GameRegistryEntry> = {
     appId: 6749251466,
     slug: 'cookierun-crumble',
     provider: 'cookierun-crumble-appstore'
+  },
+  'dark-war-survival': {
+    appId: 6670441558,
+    slug: 'dark-war-survival',
+    provider: 'darkwar-survival-webshop'
+  },
+  'darkwar-survival': {
+    appId: 6670441558,
+    slug: 'dark-war-survival',
+    provider: 'darkwar-survival-webshop'
+  },
+  darkwar: {
+    appId: 6670441558,
+    slug: 'dark-war-survival',
+    provider: 'darkwar-survival-webshop'
+  },
+  'dark-war': {
+    appId: 6670441558,
+    slug: 'dark-war-survival',
+    provider: 'darkwar-survival-webshop'
+  },
+  dws: {
+    appId: 6670441558,
+    slug: 'dark-war-survival',
+    provider: 'darkwar-survival-webshop'
   },
   'cookierun-classic-24buym': {
     appId: 24001,
@@ -473,6 +499,7 @@ const GAME_DISPLAY_NAMES: Record<string, string> = {
   'cookierun-classic': 'Cookie Run: Classic',
   'cookierun-classic-24buym': 'Cookie Run: Classic (24buym)',
   'cookierun-crumble': 'CookieRun: Crumble',
+  'dark-war-survival': 'Dark War: Survival',
   heartopia: 'Heartopia',
   roblox: 'Roblox',
   'wuthering-waves': 'Wuthering Waves',

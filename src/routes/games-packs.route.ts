@@ -139,6 +139,11 @@ import {
   fetchCookieRunCrumblePacks
 } from '../services/cookierun-crumble-appstore-packs.service'
 import {
+  DarkWarInvalidUpstreamResponseError,
+  DarkWarUpstreamUnavailableError,
+  fetchDarkWarSurvivalPacks
+} from '../services/darkwar-survival-webshop-packs.service'
+import {
   fetchDeltaForcePacks
 } from '../services/delta-force-packs.service'
 import {
@@ -526,6 +531,19 @@ export const gamesPacksRoutes = new Elysia().get(
           return status(502, { error: 'Upstream service unavailable' })
         }
         if (error instanceof CookieRunCrumbleInvalidUpstreamResponseError) {
+          return status(502, { error: 'Invalid upstream response' })
+        }
+        throw error
+      }
+    }
+    if (game.provider === 'darkwar-survival-webshop') {
+      try {
+        return await fetchDarkWarSurvivalPacks()
+      } catch (error) {
+        if (error instanceof DarkWarUpstreamUnavailableError) {
+          return status(502, { error: 'Upstream service unavailable' })
+        }
+        if (error instanceof DarkWarInvalidUpstreamResponseError) {
           return status(502, { error: 'Invalid upstream response' })
         }
         throw error
