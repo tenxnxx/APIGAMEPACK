@@ -13,6 +13,7 @@ export type GameProvider =
   | 'cookierun-crumble-appstore'
   | 'darkwar-survival-webshop'
   | 'vampir-netmarble'
+  | 'lordrush-official'
   | 'genshin-impact-hoyoverse'
   | 'last-z-survival-shooter-omnilojo'
   | 'palmon-survival-lilith'
@@ -362,6 +363,26 @@ export const GAME_REGISTRY: Record<string, GameRegistryEntry> = {
     slug: 'genshin-impact',
     provider: 'genshin-impact-hoyoverse'
   },
+  lordrush: {
+    appId: 6759788962,
+    slug: 'lordrush',
+    provider: 'lordrush-official'
+  },
+  'lord-rush': {
+    appId: 6759788962,
+    slug: 'lordrush',
+    provider: 'lordrush-official'
+  },
+  lordrushgame: {
+    appId: 6759788962,
+    slug: 'lordrush',
+    provider: 'lordrush-official'
+  },
+  'lordrush-official': {
+    appId: 6759788962,
+    slug: 'lordrush',
+    provider: 'lordrush-official'
+  },
   'dark-war-survival': {
     appId: 6670441558,
     slug: 'dark-war-survival',
@@ -694,6 +715,7 @@ const GAME_DISPLAY_NAMES: Record<string, string> = {
   'cookierun-crumble': 'CookieRun: Crumble',
   'dark-war-survival': 'Dark War: Survival',
   vampir: 'VAMPIR',
+  lordrush: "Lordrush",
   'genshin-impact': "Genshin Impact",
   'last-z-survival-shooter': "Last Z: Survival Shooter",
   'palmon-survival': "Palmon: Survival",
