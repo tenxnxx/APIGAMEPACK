@@ -147,6 +147,7 @@ import { fetchTorchlightInfinitePacks } from '../services/torchlight-infinite-pa
 import { AppStoreGameInvalidUpstreamResponseError, AppStoreGameUpstreamUnavailableError } from '../services/appstore-game-packs'
 import { fetchZenlessZoneZeroPacks } from '../services/zenless-zone-zero-packs.service'
 import { fetchHololiveDreamsPacks } from '../services/hololive-dreams-packs.service'
+import { fetchSoulLandAwakeningWorldPacks } from '../services/soul-land-awakening-world-packs.service'
 import {
   VampirInvalidUpstreamResponseError,
   VampirUpstreamUnavailableError,
@@ -574,6 +575,19 @@ export const gamesPacksRoutes = new Elysia().get(
     if (game.provider === 'hololive-dreams-appstore') {
       try {
         return await fetchHololiveDreamsPacks()
+      } catch (error) {
+        if (error instanceof AppStoreGameUpstreamUnavailableError) {
+          return status(502, { error: 'Upstream service unavailable' })
+        }
+        if (error instanceof AppStoreGameInvalidUpstreamResponseError) {
+          return status(502, { error: 'Invalid upstream response' })
+        }
+        throw error
+      }
+    }
+    if (game.provider === 'soul-land-awakening-world-appstore') {
+      try {
+        return await fetchSoulLandAwakeningWorldPacks()
       } catch (error) {
         if (error instanceof AppStoreGameUpstreamUnavailableError) {
           return status(502, { error: 'Upstream service unavailable' })

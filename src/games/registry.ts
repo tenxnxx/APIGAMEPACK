@@ -13,6 +13,7 @@ export type GameProvider =
   | 'cookierun-crumble-appstore'
   | 'darkwar-survival-webshop'
   | 'vampir-netmarble'
+  | 'soul-land-awakening-world-appstore'
   | 'hololive-dreams-appstore'
   | 'zenless-zone-zero-hoyoverse'
   | 'torchlight-infinite-appstore'
@@ -257,6 +258,36 @@ export const GAME_REGISTRY: Record<string, GameRegistryEntry> = {
     appId: 6756641249,
     slug: 'hololive-dreams',
     provider: 'hololive-dreams-appstore'
+  },
+  'soul-land-awakening-world': {
+    appId: 6762107883,
+    slug: 'soul-land-awakening-world',
+    provider: 'soul-land-awakening-world-appstore'
+  },
+  soulland: {
+    appId: 6762107883,
+    slug: 'soul-land-awakening-world',
+    provider: 'soul-land-awakening-world-appstore'
+  },
+  'soul-land': {
+    appId: 6762107883,
+    slug: 'soul-land-awakening-world',
+    provider: 'soul-land-awakening-world-appstore'
+  },
+  slaw: {
+    appId: 6762107883,
+    slug: 'soul-land-awakening-world',
+    provider: 'soul-land-awakening-world-appstore'
+  },
+  'soul-land-aw': {
+    appId: 6762107883,
+    slug: 'soul-land-awakening-world',
+    provider: 'soul-land-awakening-world-appstore'
+  },
+  'douluo-dalu': {
+    appId: 6762107883,
+    slug: 'soul-land-awakening-world',
+    provider: 'soul-land-awakening-world-appstore'
   },
   'dark-war-survival': {
     appId: 6670441558,
@@ -590,6 +621,7 @@ const GAME_DISPLAY_NAMES: Record<string, string> = {
   'cookierun-crumble': 'CookieRun: Crumble',
   'dark-war-survival': 'Dark War: Survival',
   vampir: 'VAMPIR',
+  'soul-land-awakening-world': "Soul Land: Awakening World",
   'hololive-dreams': "hololive Dreams",
   'zenless-zone-zero': "Zenless Zone Zero",
   'torchlight-infinite': "Torchlight: Infinite",
