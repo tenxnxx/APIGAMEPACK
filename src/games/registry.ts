@@ -13,6 +13,7 @@ export type GameProvider =
   | 'cookierun-crumble-appstore'
   | 'darkwar-survival-webshop'
   | 'vampir-netmarble'
+  | 'zenless-zone-zero-hoyoverse'
   | 'torchlight-infinite-appstore'
   | 'lastwar-24buym'
   | 'heartopia-xd'
@@ -205,6 +206,31 @@ export const GAME_REGISTRY: Record<string, GameRegistryEntry> = {
     appId: 1593130084,
     slug: 'torchlight-infinite',
     provider: 'torchlight-infinite-appstore'
+  },
+  'zenless-zone-zero': {
+    appId: 1606356401,
+    slug: 'zenless-zone-zero',
+    provider: 'zenless-zone-zero-hoyoverse'
+  },
+  zzz: {
+    appId: 1606356401,
+    slug: 'zenless-zone-zero',
+    provider: 'zenless-zone-zero-hoyoverse'
+  },
+  zenless: {
+    appId: 1606356401,
+    slug: 'zenless-zone-zero',
+    provider: 'zenless-zone-zero-hoyoverse'
+  },
+  zenlesszonezero: {
+    appId: 1606356401,
+    slug: 'zenless-zone-zero',
+    provider: 'zenless-zone-zero-hoyoverse'
+  },
+  'zenless-zone-zero-hoyoverse': {
+    appId: 1606356401,
+    slug: 'zenless-zone-zero',
+    provider: 'zenless-zone-zero-hoyoverse'
   },
   'dark-war-survival': {
     appId: 6670441558,
@@ -538,6 +564,7 @@ const GAME_DISPLAY_NAMES: Record<string, string> = {
   'cookierun-crumble': 'CookieRun: Crumble',
   'dark-war-survival': 'Dark War: Survival',
   vampir: 'VAMPIR',
+  'zenless-zone-zero': "Zenless Zone Zero",
   'torchlight-infinite': "Torchlight: Infinite",
   heartopia: 'Heartopia',
   roblox: 'Roblox',
