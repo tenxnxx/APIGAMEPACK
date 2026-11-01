@@ -187,11 +187,7 @@ import {
   LastWar24buymUpstreamUnavailableError,
   fetchLastWar24buymPacks
 } from '../services/lastwar-24buym-packs.service'
-import {
-  LastWarInvalidUpstreamResponseError,
-  LastWarUpstreamUnavailableError,
-  fetchLastWarOfficialPacks
-} from '../services/lastwar-packs.service'
+import { fetchLastWarStorePacks } from '../services/lastwar-store-packs.service'
 import {
   IdentityVInvalidUpstreamResponseError,
   IdentityVUpstreamUnavailableError,
@@ -288,12 +284,12 @@ export const gamesPacksRoutes = new Elysia().get(
 
     if (game.provider === 'lastwar-official') {
       try {
-        return await fetchLastWarOfficialPacks()
+        return await fetchLastWarStorePacks()
       } catch (error) {
-        if (error instanceof LastWarUpstreamUnavailableError) {
+        if (error instanceof AppStoreGameUpstreamUnavailableError) {
           return status(502, { error: 'Upstream service unavailable' })
         }
-        if (error instanceof LastWarInvalidUpstreamResponseError) {
+        if (error instanceof AppStoreGameInvalidUpstreamResponseError) {
           return status(502, { error: 'Invalid upstream response' })
         }
         throw error

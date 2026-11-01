@@ -49,7 +49,7 @@ describe('Last War (official store + App Store TH/US full list)', () => {
     expect(lastWarAppStoreClassify({ productId: 'prodios_5', nameEn: 'Hot Package 5', nameTh: null, rawName: 'Hot Package 5', descEn: null, descTh: null }).kind).toBe('bundle')
   })
 
-  it('web Gold Bricks (USD, THB null), gift pack item_pack, App Store THB + USD US->KH', async () => {
+  it('web Gold Bricks (USD + THB via identical-USD Apple tier, else null), gift pack item_pack, App Store THB + USD US->KH', async () => {
     mock({ ...web, ...apple })
     const b: any = await fetchLastWarStorePacks()
     expect(b.source_mode).toBe('lastwar-store+appstore')
@@ -57,8 +57,11 @@ describe('Last War (official store + App Store TH/US full list)', () => {
     expect(b.publisher).toBe('FUNFLY PTE. LTD.')
     expect(b.summary.packCount).toBe(6)
     const g = by(b, 'goods_8')
-    expect(g).toMatchObject({ item: 'Gold Brick', baseItemAmount: 500, bonusItemAmount: 25, totalItemAmount: 525, price_thb: null, price_usd: 4.99, prices: { THB: null, USD: 4.99 } })
-    expect(g.price_thb_null_reason).toMatch(/no FX/)
+    expect(g).toMatchObject({ item: 'Gold Brick', baseItemAmount: 500, bonusItemAmount: 25, totalItemAmount: 525, price_thb: 160, price_usd: 4.99, prices: { THB: 160, USD: 4.99 } })
+    expect(g.price_thb_source).toMatch(/identical USD 4.99/)
+    expect(g.price_thb_null_reason).toBeUndefined()
+    expect(by(b, 'goods_1')).toMatchObject({ price_thb: null, price_usd: 9.99, prices: { THB: null, USD: 9.99 } })
+    expect(by(b, 'goods_1').price_thb_null_reason).toMatch(/No App Store tier is priced USD 9.99.*no FX/)
     expect(all(b).filter((p: any) => p.kind === 'currency').map((p: any) => p.baseItemAmount)).toEqual([500, 1000])
     expect(by(b, '70000018')).toMatchObject({
       item_pack: true, name_en: 'Special Gold Brick Pack', name_th: 'แพ็กเกจทองแท่งสุดคุ้ม', price_usd: 19.99, price_thb: null,

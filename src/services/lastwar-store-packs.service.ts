@@ -202,8 +202,8 @@ const APPSTORE_CFG: AppStoreGameConfig = {
 
 const NOTES = [
   `Last War: Survival (App Store title "Last War:Survival") is published by FUNFLY PTE. LTD. and is sold on the Thai App Store (id ${LAST_WAR_APP_ID}). Official web store: ${LAST_WAR_STORE_URL}.`,
-  'Official Last War Store: the public logged-out list from the store\'s live JS (Gold Brick tiers + gift packs, USD). THB is shown by the store only after a game-account login (not done), so web-store THB is null; no FX. Base = pay_brick_num, bonus = free_brick_num.',
-  'App Store: full in-app list, THB from App Store TH, USD from App Store US -> KH/LA/MM matched by offerName. Hot Packages and passes are named without contents, so contents are null with a reason. Web Gold Brick tiers and App Store Hot Packages are different products and are not price-matched.'
+  'Official Last War Store: the public logged-out list from the store\'s live JS (Gold Brick tiers + gift packs, USD). THB is shown by the store only after a game-account login (not done); THB comes from the App Store TH price of the Apple tier with the identical USD price, otherwise null with a reason; no FX. Base = pay_brick_num, bonus = free_brick_num.',
+  'App Store: full in-app list, THB from App Store TH, USD from App Store US -> KH/LA/MM matched by offerName. Hot Packages and passes are named without contents, so contents are null with a reason. Web Gold Brick tiers and App Store Hot Packages are different products; only the price point (identical USD tier) is shared, used for the web THB price.'
 ]
 
 async function getText(url: string, signal?: AbortSignal, referer?: string): Promise<string> {
@@ -238,6 +238,43 @@ async function storeSide(signal?: AbortSignal) {
   return { gold, gifts, mainJs: m[1] }
 }
 
+/**
+ * Web-store packs are USD only (logged out). Fill THB from the App Store TH price of the Apple tier
+ * that has the identical USD price (same Apple price point, as the legacy service did); null with a
+ * reason when no tier or several THB values match. No FX.
+ */
+export function lastWarFillThb(webPacks: any[], asPacks: any[] | null, appStoreError?: string) {
+  const tiers = (asPacks ?? []).filter((t) => typeof t.price_usd === 'number' && typeof t.price_thb === 'number')
+  const top = tiers.length ? Math.max(...tiers.map((t) => t.price_usd)) : null
+  for (const p of webPacks) {
+    const usd = p.price_usd
+    if (typeof usd !== 'number') continue
+    if (!asPacks) {
+      p.price_thb_null_reason = `${PRICE_THB_NULL}; the App Store tiers needed for a THB price were unavailable (${appStoreError ?? 'error'})`
+      continue
+    }
+    const hits = tiers.filter((t) => t.price_usd === usd)
+    const vals = [...new Set(hits.map((t) => t.price_thb))]
+    if (vals.length === 1) {
+      const t = hits[0]
+      p.price_thb = vals[0]
+      p.prices = { THB: vals[0], USD: usd }
+      p.price = vals[0]
+      p.currency = 'THB'
+      p.price_thb_source =
+        `${t.price_thb_source ?? 'appstore-th'} - Apple tier ${t.product_id} ("${t.name}") has the identical USD ${usd} price as this official-store product` +
+        (hits.length > 1 ? ` (${hits.length} tiers, same THB price)` : '')
+      p.price_thb_match = { method: 'identical-usd-price-tier', store_usd: usd, apple_product_id: t.product_id, apple_name: t.name }
+      delete p.price_thb_null_reason
+    } else {
+      p.price_thb_null_reason = vals.length > 1
+        ? `${hits.length} App Store tiers share USD ${usd} but have different THB prices (${vals.join(' / ')}); not guessing, no FX`
+        : `No App Store tier is priced USD ${usd}` + (top != null && usd > top ? ` (Apple tiers for this game top out at USD ${top})` : '') +
+          `, so there is no official THB price for it; ${PRICE_THB_NULL}`
+    }
+  }
+}
+
 /** Live Last War packs: official store (USD, logged-out list) + App Store TH/US full in-app list. */
 export async function fetchLastWarStorePacks(options?: { signal?: AbortSignal }): Promise<RovPacksResponse> {
   const signal = options?.signal
@@ -256,6 +293,8 @@ export async function fetchLastWarStorePacks(options?: { signal?: AbortSignal })
   }
   const as: any = asR.status === 'fulfilled' ? asR.value : null
   if (as) for (const c of as.categories) cats.push(c)
+  if (wR.status === 'fulfilled')
+    lastWarFillThb([...wR.value.gifts, ...wR.value.gold], as ? as.categories.flatMap((c: any) => c.packs) : null, err(asR) ?? undefined)
   let n = 0
   const categories = cats.map((c, i) => {
     for (const p of c.packs) p.id = ++n

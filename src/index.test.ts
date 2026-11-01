@@ -907,115 +907,55 @@ describe('GET /games/last-war/packs/', () => {
     '<script type="module" crossorigin src="/assets/js/main-TESTHASH.js"></script>'
   const jsOfficial =
     'defaultGoodsData=[{goods_name:"",amount:"4.99",pay_brick_num:500,currency_symbol:"$",free_brick_num:25,goods_id:"goods_8",currency:"USD",status:2},{goods_name:"",amount:"9.99",pay_brick_num:1e3,currency_symbol:"$",free_brick_num:50,goods_id:"goods_1",currency:"USD",status:1},{goods_name:"",amount:"999.99",pay_brick_num:1e5,currency_symbol:"$",free_brick_num:5000,goods_id:"goods_7",currency:"USD",status:1}]'
+  const iap = (id: string, offer: string, name: string, price: number, cur: 'THB' | 'USD') => ({
+    id,
+    type: 'in-apps',
+    attributes: { name, offerName: offer, description: { standard: name }, offers: [{ currencyCode: cur, price, priceFormatted: String(price) }] }
+  })
+  const appleRows: Record<string, unknown[]> = {
+    th: [iap('1', 'prodios_5', 'Hot Package 5', 160, 'THB'), iap('2', 'prodios_10', 'Hot Package 10', 320, 'THB'), iap('3', 'prodios_1', 'Hot Package1', 30, 'THB')],
+    us: [iap('1', 'prodios_5', 'Hot Package 5', 4.99, 'USD'), iap('2', 'prodios_10', 'Hot Package 10', 9.99, 'USD'), iap('3', 'prodios_1', 'Hot Package1', 0.99, 'USD')]
+  }
+  const appleApi = (url: string): Response | null => {
+    const m = url.match(/apps\.apple\.com\/api\/apps\/v1\/catalog\/([a-z]{2})\//)
+    if (!m) return null
+    const off = Number(url.match(/offset=(\d+)/)?.[1] ?? 0)
+    const slice = (appleRows[m[1]] ?? []).slice(off, off + 10)
+    return slice.length ? Response.json({ data: slice }) : new Response('nf', { status: 404 })
+  }
 
-  const sampleThHtml = `<!DOCTYPE html><html><body>
-<script type="application/json">
-{"data":[{"data":{"shelfMapping":{"information":{"items":[
-{"title":"In-App Purchases","items":[{"textPairs":[
-["Hot Package 5","฿160.00"],
-["Hot Package 10","฿320.00"],
-["Hot Package1","฿30.00"]
-]}],"items_V3":[
-{"$kind":"textPair","leadingText":"Hot Package 5","trailingText":"฿160.00"},
-{"$kind":"textPair","leadingText":"Hot Package 10","trailingText":"฿320.00"},
-{"$kind":"textPair","leadingText":"Hot Package1","trailingText":"฿30.00"}
-]}
-]}}}}]}
-</script>
-</body></html>`
-
-  const sampleUsHtml = `<!DOCTYPE html><html><body>
-<script type="application/json">
-{"data":[{"data":{"shelfMapping":{"information":{"items":[
-{"title":"In-App Purchases","items":[{"textPairs":[
-["Hot Package 5","$4.99"],
-["Hot Package 10","$9.99"],
-["Hot Package1","$0.99"]
-]}],"items_V3":[
-{"$kind":"textPair","leadingText":"Hot Package 5","trailingText":"$4.99"},
-{"$kind":"textPair","leadingText":"Hot Package 10","trailingText":"$9.99"},
-{"$kind":"textPair","leadingText":"Hot Package1","trailingText":"$0.99"}
-]}
-]}}}}]}
-</script>
-</body></html>`
-
-  it('returns official Gold Brick packs with App Store THB + official USD', async () => {
-    globalThis.fetch = (async (input) => {
+  it('returns official store Gold Bricks (USD + THB via identical-USD Apple tier) and the App Store list', async () => {
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
       const url = String(input)
-      if (url === 'https://store.lastwar.com/' || url.endsWith('store.lastwar.com/')) {
-        return new Response(htmlOfficial, { status: 200 })
-      }
-      if (url.includes('/assets/js/main-')) {
-        return new Response(jsOfficial, { status: 200 })
-      }
-      if (url.includes('apps.apple.com/th/app/last-war-survival')) {
-        return new Response(sampleThHtml, {
-          status: 200,
-          headers: { 'Content-Type': 'text/html; charset=utf-8' }
-        })
-      }
-      if (url.includes('apps.apple.com/us/app/last-war-survival')) {
-        return new Response(sampleUsHtml, {
-          status: 200,
-          headers: { 'Content-Type': 'text/html; charset=utf-8' }
-        })
-      }
-      throw new Error('unexpected url ' + url)
-    }) as typeof fetch
+      const api = appleApi(url)
+      if (api) return api
+      if (url.includes('/assets/js/main-')) return new Response(jsOfficial, { status: 200 })
+      if (url.startsWith('https://store.lastwar.com/')) return new Response(htmlOfficial, { status: 200 })
+      return new Response('nf', { status: 404 })
+    }) as unknown as typeof fetch
 
     const response = await app.handle(
       new Request('http://localhost/games/last-war/packs/')
     )
     expect(response.status).toBe(200)
     const body = await response.json()
-    expect(body.game).toEqual({
-      id: 200001,
-      slug: 'last-war',
-      name: 'Last War',
-      itemName: 'Gold Brick',
-      itemIcon: ''
-    })
-    // $999.99 has no App Store THB match → omitted
-    expect(body.summary).toEqual({ categoryCount: 1, packCount: 2 })
+    expect(body.game).toMatchObject({ id: 200001, slug: 'last-war', name: 'Last War', itemName: 'Gold Brick' })
     expect(body.source).toBe('https://store.lastwar.com/')
-    expect(body.sources).toEqual({
-      thb: 'https://apps.apple.com/th/app/last-war-survival/id6448786147',
-      usd: 'https://store.lastwar.com/'
-    })
-    expect(body.categories[0].packs).toEqual([
-      {
-        id: 1,
-        name: 'Gold Brick 500',
-        baseItemAmount: 500,
-        bonusItemAmount: 25,
-        totalItemAmount: 525,
-        price: 160,
-        currency: 'THB',
-        price_thb: 160,
-        price_usd: 4.99,
-        prices: { THB: 160, USD: 4.99 },
-        price_thb_source: 'appstore',
-        price_usd_source: 'official-store'
-      },
-      {
-        id: 2,
-        name: 'Gold Brick 1000',
-        baseItemAmount: 1000,
-        bonusItemAmount: 50,
-        totalItemAmount: 1050,
-        price: 320,
-        currency: 'THB',
-        price_thb: 320,
-        price_usd: 9.99,
-        prices: { THB: 320, USD: 9.99 },
-        price_thb_source: 'appstore',
-        price_usd_source: 'official-store'
-      }
-    ])
+    expect(body.source_mode).toBe('lastwar-store+appstore')
+    const packs = body.categories.flatMap((c: any) => c.packs)
+    expect(body.summary.packCount).toBe(6)
+    const gold = packs.filter((p: any) => p.kind === 'currency')
+    expect(gold.map((p: any) => p.baseItemAmount)).toEqual([500, 1000, 100000])
+    expect(gold[0]).toMatchObject({ bonusItemAmount: 25, totalItemAmount: 525, price_thb: 160, price_usd: 4.99, prices: { THB: 160, USD: 4.99 } })
+    expect(gold[1]).toMatchObject({ price_thb: 320, price_usd: 9.99, prices: { THB: 320, USD: 9.99 } })
+    // $999.99 has no Apple tier -> THB null with a reason (never 0, no FX)
+    expect(gold[2]).toMatchObject({ price_thb: null, price_usd: 999.99, prices: { THB: null, USD: 999.99 } })
+    expect(gold[2].price_thb_null_reason).toMatch(/No App Store tier is priced USD 999.99/)
+    const hot = packs.find((p: any) => p.product_id === 'prodios_1')
+    expect(hot).toMatchObject({ price_thb: 30, price_usd: 0.99 })
   })
 
-  it('returns 502 when official store fetch fails', async () => {
+  it('returns 502 when every upstream fetch fails', async () => {
     globalThis.fetch = (async () => {
       throw new Error('network')
     }) as unknown as typeof fetch
@@ -1029,31 +969,19 @@ describe('GET /games/last-war/packs/', () => {
     })
   })
 
-  it('returns 502 when App Store TH IAP is empty', async () => {
-    globalThis.fetch = (async (input) => {
-      const url = String(input)
-      if (url.includes('store.lastwar.com')) {
-        return new Response(htmlOfficial, { status: 200 })
-      }
-      if (url.includes('/assets/js/main-')) {
-        return new Response(jsOfficial, { status: 200 })
-      }
-      if (url.includes('apps.apple.com/th/')) {
-        return new Response('<html><body>no iap</body></html>', { status: 200 })
-      }
-      if (url.includes('apps.apple.com/us/')) {
-        return new Response(sampleUsHtml, { status: 200 })
-      }
-      throw new Error('unexpected url ' + url)
-    }) as typeof fetch
+  it('still returns 200 from the App Store list when the official store is down', async () => {
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      const api = appleApi(String(input))
+      return api ?? new Response('down', { status: 503 })
+    }) as unknown as typeof fetch
 
     const response = await app.handle(
       new Request('http://localhost/games/last-war/packs/')
     )
-    expect(response.status).toBe(502)
-    expect(await response.json()).toEqual({
-      error: 'Invalid upstream response'
-    })
+    expect(response.status).toBe(200)
+    const body = await response.json()
+    expect(body.summary.packCount).toBe(3)
+    expect(body.notes[0]).toMatch(/Official Last War Store unavailable/)
   })
 })
 
