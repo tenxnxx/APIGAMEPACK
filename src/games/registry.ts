@@ -13,6 +13,7 @@ export type GameProvider =
   | 'cookierun-crumble-appstore'
   | 'darkwar-survival-webshop'
   | 'vampir-netmarble'
+  | 'last-z-survival-shooter-omnilojo'
   | 'palmon-survival-lilith'
   | 'soul-land-awakening-world-appstore'
   | 'hololive-dreams-appstore'
@@ -309,6 +310,31 @@ export const GAME_REGISTRY: Record<string, GameRegistryEntry> = {
     appId: 6739345737,
     slug: 'palmon-survival',
     provider: 'palmon-survival-lilith'
+  },
+  'last-z-survival-shooter': {
+    appId: 6503272652,
+    slug: 'last-z-survival-shooter',
+    provider: 'last-z-survival-shooter-omnilojo'
+  },
+  lastz: {
+    appId: 6503272652,
+    slug: 'last-z-survival-shooter',
+    provider: 'last-z-survival-shooter-omnilojo'
+  },
+  'last-z': {
+    appId: 6503272652,
+    slug: 'last-z-survival-shooter',
+    provider: 'last-z-survival-shooter-omnilojo'
+  },
+  lastzsurvival: {
+    appId: 6503272652,
+    slug: 'last-z-survival-shooter',
+    provider: 'last-z-survival-shooter-omnilojo'
+  },
+  'last-z-survival': {
+    appId: 6503272652,
+    slug: 'last-z-survival-shooter',
+    provider: 'last-z-survival-shooter-omnilojo'
   },
   'dark-war-survival': {
     appId: 6670441558,
@@ -642,6 +668,7 @@ const GAME_DISPLAY_NAMES: Record<string, string> = {
   'cookierun-crumble': 'CookieRun: Crumble',
   'dark-war-survival': 'Dark War: Survival',
   vampir: 'VAMPIR',
+  'last-z-survival-shooter': "Last Z: Survival Shooter",
   'palmon-survival': "Palmon: Survival",
   'soul-land-awakening-world': "Soul Land: Awakening World",
   'hololive-dreams': "hololive Dreams",
