@@ -143,6 +143,8 @@ import {
   DarkWarUpstreamUnavailableError,
   fetchDarkWarSurvivalPacks
 } from '../services/darkwar-survival-webshop-packs.service'
+import { fetchTorchlightInfinitePacks } from '../services/torchlight-infinite-packs.service'
+import { AppStoreGameInvalidUpstreamResponseError, AppStoreGameUpstreamUnavailableError } from '../services/appstore-game-packs'
 import {
   VampirInvalidUpstreamResponseError,
   VampirUpstreamUnavailableError,
@@ -536,6 +538,19 @@ export const gamesPacksRoutes = new Elysia().get(
           return status(502, { error: 'Upstream service unavailable' })
         }
         if (error instanceof CookieRunCrumbleInvalidUpstreamResponseError) {
+          return status(502, { error: 'Invalid upstream response' })
+        }
+        throw error
+      }
+    }
+    if (game.provider === 'torchlight-infinite-appstore') {
+      try {
+        return await fetchTorchlightInfinitePacks()
+      } catch (error) {
+        if (error instanceof AppStoreGameUpstreamUnavailableError) {
+          return status(502, { error: 'Upstream service unavailable' })
+        }
+        if (error instanceof AppStoreGameInvalidUpstreamResponseError) {
           return status(502, { error: 'Invalid upstream response' })
         }
         throw error

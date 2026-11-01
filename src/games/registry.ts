@@ -13,6 +13,7 @@ export type GameProvider =
   | 'cookierun-crumble-appstore'
   | 'darkwar-survival-webshop'
   | 'vampir-netmarble'
+  | 'torchlight-infinite-appstore'
   | 'lastwar-24buym'
   | 'heartopia-xd'
   | 'roblox-premiumfeatures'
@@ -184,6 +185,26 @@ export const GAME_REGISTRY: Record<string, GameRegistryEntry> = {
     appId: 6738163891,
     slug: 'vampir',
     provider: 'vampir-netmarble'
+  },
+  'torchlight-infinite': {
+    appId: 1593130084,
+    slug: 'torchlight-infinite',
+    provider: 'torchlight-infinite-appstore'
+  },
+  torchlight: {
+    appId: 1593130084,
+    slug: 'torchlight-infinite',
+    provider: 'torchlight-infinite-appstore'
+  },
+  'torchlight-infinite-xd': {
+    appId: 1593130084,
+    slug: 'torchlight-infinite',
+    provider: 'torchlight-infinite-appstore'
+  },
+  torchlightinfinite: {
+    appId: 1593130084,
+    slug: 'torchlight-infinite',
+    provider: 'torchlight-infinite-appstore'
   },
   'dark-war-survival': {
     appId: 6670441558,
@@ -517,6 +538,7 @@ const GAME_DISPLAY_NAMES: Record<string, string> = {
   'cookierun-crumble': 'CookieRun: Crumble',
   'dark-war-survival': 'Dark War: Survival',
   vampir: 'VAMPIR',
+  'torchlight-infinite': "Torchlight: Infinite",
   heartopia: 'Heartopia',
   roblox: 'Roblox',
   'wuthering-waves': 'Wuthering Waves',
