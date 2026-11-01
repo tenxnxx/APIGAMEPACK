@@ -144,6 +144,11 @@ import {
   fetchDarkWarSurvivalPacks
 } from '../services/darkwar-survival-webshop-packs.service'
 import {
+  VampirInvalidUpstreamResponseError,
+  VampirUpstreamUnavailableError,
+  fetchVampirPacks
+} from '../services/vampir-packs.service'
+import {
   fetchDeltaForcePacks
 } from '../services/delta-force-packs.service'
 import {
@@ -531,6 +536,19 @@ export const gamesPacksRoutes = new Elysia().get(
           return status(502, { error: 'Upstream service unavailable' })
         }
         if (error instanceof CookieRunCrumbleInvalidUpstreamResponseError) {
+          return status(502, { error: 'Invalid upstream response' })
+        }
+        throw error
+      }
+    }
+    if (game.provider === 'vampir-netmarble') {
+      try {
+        return await fetchVampirPacks()
+      } catch (error) {
+        if (error instanceof VampirUpstreamUnavailableError) {
+          return status(502, { error: 'Upstream service unavailable' })
+        }
+        if (error instanceof VampirInvalidUpstreamResponseError) {
           return status(502, { error: 'Invalid upstream response' })
         }
         throw error

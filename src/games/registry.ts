@@ -12,6 +12,7 @@ export type GameProvider =
   | 'cookierun-classic-24buym'
   | 'cookierun-crumble-appstore'
   | 'darkwar-survival-webshop'
+  | 'vampir-netmarble'
   | 'lastwar-24buym'
   | 'heartopia-xd'
   | 'roblox-premiumfeatures'
@@ -168,6 +169,21 @@ export const GAME_REGISTRY: Record<string, GameRegistryEntry> = {
     appId: 6749251466,
     slug: 'cookierun-crumble',
     provider: 'cookierun-crumble-appstore'
+  },
+  vampir: {
+    appId: 6738163891,
+    slug: 'vampir',
+    provider: 'vampir-netmarble'
+  },
+  'vampir-netmarble': {
+    appId: 6738163891,
+    slug: 'vampir',
+    provider: 'vampir-netmarble'
+  },
+  'vampir-mmorpg': {
+    appId: 6738163891,
+    slug: 'vampir',
+    provider: 'vampir-netmarble'
   },
   'dark-war-survival': {
     appId: 6670441558,
@@ -500,6 +516,7 @@ const GAME_DISPLAY_NAMES: Record<string, string> = {
   'cookierun-classic-24buym': 'Cookie Run: Classic (24buym)',
   'cookierun-crumble': 'CookieRun: Crumble',
   'dark-war-survival': 'Dark War: Survival',
+  vampir: 'VAMPIR',
   heartopia: 'Heartopia',
   roblox: 'Roblox',
   'wuthering-waves': 'Wuthering Waves',
