@@ -100,6 +100,47 @@ describe('Lordrush (Century Games official store + App Store)', () => {
     expect(by(b, P + 'normal05').price_usd_source).toMatch(/kh/)
   })
 
+  it('fills web-store THB from the Apple item with the identical USD price (unique THB), else null with reason', async () => {
+    const TH2 = [...TH, row('16', 'gem03', 'Sack of Gems', 'Gems', 349, 'THB'), row('17', 'deal04', 'Daily Deal (7d)', 'Monthly Card', 349, 'THB')]
+    const US2 = [...US, row('16', 'gem03', 'Sack of Gems', 'Gems', 9.99, 'USD'), row('17', 'deal04', 'Daily Deal (7d)', 'Monthly Card', 9.99, 'USD')]
+    mock({ [STORE]: store('$'), ...apple, [API + 'th/']: page(TH2), [API + 'us/']: page(US2) })
+    const b: any = await (await get()).json()
+    const g19 = by(b, 'thirdpayment.s01.lordrush.gem19')
+    expect(g19).toMatchObject({ price_thb: 349, price_usd: 9.99, prices: { THB: 349, USD: 9.99 }, currency: 'THB' })
+    expect(g19.price_thb_source).toMatch(/identical USD 9.99 price/)
+    expect(g19.price_thb_match).toMatchObject({ method: 'identical-usd-price-tier', apple_items_at_price: 2 })
+    expect(g19.price_thb_null_reason).toBeUndefined()
+    // conflicting THB at the same USD -> null with reason
+    const US3 = [...US, row('16', 'gem03', 'Sack of Gems', 'Gems', 9.99, 'USD'), row('18', 'normal09', 'Normal Pack 9', 'x', 9.99, 'USD')]
+    const TH3 = [...TH, row('16', 'gem03', 'Sack of Gems', 'Gems', 349, 'THB'), row('18', 'normal09', 'Normal Pack 9', 'x', 369, 'THB')]
+    mock({ [STORE]: store('$'), ...apple, [API + 'th/']: page(TH3), [API + 'us/']: page(US3) })
+    const b3: any = await (await get()).json()
+    expect(by(b3, 'thirdpayment.s01.lordrush.gem19').price_thb).toBeNull()
+    expect(by(b3, 'thirdpayment.s01.lordrush.gem19').price_thb_null_reason).toMatch(/different THB prices \(349 \/ 369\)/)
+  })
+
+  it('lists the game as "LORD RUSH" so a search for "lord rush" finds it', async () => {
+    const list: any = await (await app.handle(new Request('http://localhost/games/'))).json()
+    const g = list.games.find((x: any) => x.slug === 'lordrush')
+    expect(g.name).toBe('LORD RUSH')
+    expect(g.name.toLowerCase()).toContain('lord rush')
+  })
+
+  it('product-page fallback reads the current App Store page format (textPair rows under "In-App Purchases")', async () => {
+    const page = { data: [{ data: { shelfMapping: { information: { items: [{ $kind: 'Annotation', title: 'In-App Purchases', summary: 'Yes', items: [
+      { $kind: 'textPair', leadingText: 'Normal Pack 5', trailingText: '฿179.00' },
+      { $kind: 'textPair', leadingText: 'Sack of Gems', trailingText: '฿349.00' }
+    ] }] } } } }] }
+    const html = `<html><body><script type="application/json">${JSON.stringify(page)}</script></body></html>`
+    mock({ [STORE]: store('$'), 'https://apps.apple.com/th/app/': () => new Response(html, { status: 200 }) })
+    const res = await get()
+    expect(res.status).toBe(200)
+    const b: any = await res.json()
+    const names = all(b).filter((p: any) => p.price_thb_source === 'apple-app-store-th (product page)').map((p: any) => [p.name, p.price_thb])
+    expect(names).toEqual(expect.arrayContaining([['Normal Pack 5', 179], ['Sack of Gems', 349]]))
+    expect(by(b, 'thirdpayment.s01.lordrush.gem19').price_thb_null_reason).toMatch(/catalog API unavailable/)
+  })
+
   it('uses web-store THB when the store labels it ฿', async () => {
     mock({ [STORE]: store('฿'), ...apple })
     const b: any = await (await get()).json()

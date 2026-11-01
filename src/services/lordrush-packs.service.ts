@@ -186,7 +186,7 @@ export function lordrushAppStoreClassify(it: AsItemInput): AsClassified {
 const APPSTORE_CFG: AppStoreGameConfig = {
   appId: LORDRUSH_APP_ID,
   slug: LORDRUSH_SLUG,
-  name: 'Lordrush',
+  name: 'LORD RUSH',
   officialTitle: 'Lordrush',
   publisher: 'Century Games Innovation Pte. Ltd.',
   itemName: 'Gem',
@@ -201,13 +201,59 @@ const APPSTORE_CFG: AppStoreGameConfig = {
 const NOTES = [
   `Lordrush (App Store title "Lordrush"; written "LORD RUSH" by players) is published by Century Games Innovation Pte. Ltd. and is sold on the Thai App Store (id ${LORDRUSH_APP_ID}). Official site https://lordrush.centurygames.com/ links the official store ${LORDRUSH_STORE_URL}.`,
   'Official Lordrush Store: public pre-login package list (no login / UID). Requested with currency=THB (Thai view) and currency=USD (English view); a price is used only when the store labels it in that currency. Base = main_number (Empire Stars, which the store describes as cash equivalents), bonus = the extra items the store lists; Gem bonuses are a different item and are shown in contents and bonus_note.',
-  'App Store: THB from App Store TH, USD from App Store US -> KH/LA/MM matched by offerName. Gem / Empire Star tiers are named without amounts, so their amounts are null with a reason. Refund packs ("This is a refund pack, please follow the in-game rule") are not normal purchases and are listed under appstore_excluded.'
+  'App Store: THB from App Store TH, USD from App Store US -> KH/LA/MM matched by offerName. Web-store packs the store prices in USD only get THB from the App Store TH price of the Apple item with the identical USD price (unique THB only), otherwise null with a reason; no FX. Gem / Empire Star tiers are named without amounts, so their amounts are null with a reason. Refund packs ("This is a refund pack, please follow the in-game rule") are not normal purchases and are listed under appstore_excluded.'
 ]
+
+/**
+ * Web-store packs whose THB the store does not label: THB from the App Store TH price of the Apple
+ * item with the identical USD price (same Apple price point, like Last War / Palmon). Unique THB only;
+ * otherwise null with a reason. No FX.
+ */
+export function lordrushFillThbByUsd(webPacks: any[], asPacks: any[] | null, appStoreError?: string | null) {
+  const tiers = (asPacks ?? []).filter((t) => typeof t.price_usd === 'number' && typeof t.price_thb === 'number')
+  const top = tiers.length ? Math.max(...tiers.map((t) => t.price_usd)) : null
+  for (const p of webPacks) {
+    const usd = p.price_usd
+    if (p.price_thb != null || typeof usd !== 'number') continue
+    const storeReason = p.price_thb_null_reason
+    if (!asPacks) {
+      p.price_thb_null_reason = `${storeReason}; the App Store tiers needed for a THB price were unavailable (${appStoreError ?? 'error'})`
+      continue
+    }
+    if (!tiers.length) {
+      p.price_thb_null_reason = `${storeReason}; the App Store list served has no items with both THB and USD prices (catalog API unavailable), so no exact USD match`
+      continue
+    }
+    const hits = tiers.filter((t) => t.price_usd === usd)
+    const vals = [...new Set(hits.map((t) => t.price_thb))]
+    if (vals.length === 1) {
+      const t = hits[0]
+      p.price_thb_store_reason = storeReason
+      delete p.price_thb_null_reason
+      p.price_thb = vals[0]
+      p.prices.THB = vals[0]
+      p.price = vals[0]
+      p.currency = 'THB'
+      p.price_thb_source =
+        `${t.price_thb_source ?? 'apple-app-store-th'} - Apple item ${t.product_id} ("${t.name_en ?? t.name}") has the identical USD ${usd} price as this official-store pack` +
+        (hits.length > 1 ? ` (${hits.length} Apple items at USD ${usd}, all THB ${vals[0]})` : '')
+      p.price_thb_match = { method: 'identical-usd-price-tier', store_usd: usd, apple_product_id: t.product_id, apple_name: t.name_en ?? t.name, apple_items_at_price: hits.length }
+    } else {
+      p.price_thb_null_reason = vals.length > 1
+        ? `${hits.length} App Store items share USD ${usd} but have different THB prices (${vals.join(' / ')}); not guessing, no FX`
+        : `No App Store item is priced USD ${usd}` + (top != null && usd > top ? ` (Apple items for this game top out at USD ${top})` : '') +
+          `, so there is no official THB price for it; the store did not label a THB price (${storeReason}); no FX`
+    }
+  }
+}
+
+/** Whole App Store side (catalog API + product-page fallback) must finish inside the UI's 45 s fetch timeout. */
+const APPSTORE_BUDGET_MS = 30_000
 
 /** Live Lordrush packs: official Century Games store + App Store TH/US full in-app list. */
 export async function fetchLordrushPacks(options?: { signal?: AbortSignal }): Promise<RovPacksResponse> {
   const signal = options?.signal
-  const [thbR, usdR, asR] = await Promise.allSettled([storeSide('THB', 'TH', signal), storeSide('USD', 'EN', signal), fetchAppStoreGamePacks(APPSTORE_CFG, signal)])
+  const [thbR, usdR, asR] = await Promise.allSettled([storeSide('THB', 'TH', signal), storeSide('USD', 'EN', signal), fetchAppStoreGamePacks(APPSTORE_CFG, signal ?? AbortSignal.timeout(APPSTORE_BUDGET_MS))])
   const err = (r: PromiseSettledResult<unknown>) => (r.status === 'rejected' ? (r.reason instanceof Error ? r.reason.message : String(r.reason)) : null)
   if (thbR.status === 'rejected' && usdR.status === 'rejected' && asR.status === 'rejected') {
     const e = asR.reason
@@ -228,7 +274,6 @@ export async function fetchLordrushPacks(options?: { signal?: AbortSignal }): Pr
   for (const w of webPacks) {
     const a = asById.get(w.product_id)
     if (!a) {
-      if (w.price_thb == null) w.price_thb_null_reason += '; web-only product id (no App Store counterpart)'
       continue
     }
     merged.add(w.product_id)
@@ -250,6 +295,7 @@ export async function fetchLordrushPacks(options?: { signal?: AbortSignal }): Pr
       w.prices.USD = a.price_usd
     }
   }
+  lordrushFillThbByUsd(webPacks, as ? asPacks : null, err(asR))
   webPacks.sort((a, b) => (a.price_usd ?? Infinity) - (b.price_usd ?? Infinity) || String(a.product_id).localeCompare(String(b.product_id)))
 
   const excluded: any[] = []

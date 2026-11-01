@@ -742,7 +742,7 @@ const GAME_DISPLAY_NAMES: Record<string, string> = {
   'dark-war-survival': 'Dark War: Survival',
   vampir: 'VAMPIR',
   'lootbox-hero': "LootBox Hero",
-  lordrush: "Lordrush",
+  lordrush: "LORD RUSH",
   'genshin-impact': "Genshin Impact",
   'last-z-survival-shooter': "Last Z: Survival Shooter",
   'palmon-survival': "Palmon: Survival",

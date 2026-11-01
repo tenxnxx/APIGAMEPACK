@@ -194,6 +194,11 @@ function collectTextPairs(node: unknown): Array<[string, string]> {
         for (const item of items) {
           if (!item || typeof item !== 'object') continue
           const row = item as Record<string, unknown>
+          // Current App Store page shape (2026): textPair rows directly under the section's items.
+          if (typeof row.leadingText === 'string' && typeof row.trailingText === 'string') {
+            out.push([row.leadingText, row.trailingText])
+            continue
+          }
           const textPairs = row.textPairs
           if (Array.isArray(textPairs)) {
             for (const pair of textPairs) {
