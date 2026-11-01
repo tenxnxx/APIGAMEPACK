@@ -13,6 +13,7 @@ export type GameProvider =
   | 'cookierun-crumble-appstore'
   | 'darkwar-survival-webshop'
   | 'vampir-netmarble'
+  | 'genshin-impact-hoyoverse'
   | 'last-z-survival-shooter-omnilojo'
   | 'palmon-survival-lilith'
   | 'soul-land-awakening-world-appstore'
@@ -335,6 +336,31 @@ export const GAME_REGISTRY: Record<string, GameRegistryEntry> = {
     appId: 6503272652,
     slug: 'last-z-survival-shooter',
     provider: 'last-z-survival-shooter-omnilojo'
+  },
+  'genshin-impact': {
+    appId: 1517783697,
+    slug: 'genshin-impact',
+    provider: 'genshin-impact-hoyoverse'
+  },
+  genshin: {
+    appId: 1517783697,
+    slug: 'genshin-impact',
+    provider: 'genshin-impact-hoyoverse'
+  },
+  gi: {
+    appId: 1517783697,
+    slug: 'genshin-impact',
+    provider: 'genshin-impact-hoyoverse'
+  },
+  genshinimpact: {
+    appId: 1517783697,
+    slug: 'genshin-impact',
+    provider: 'genshin-impact-hoyoverse'
+  },
+  'genshin-impact-hoyoverse': {
+    appId: 1517783697,
+    slug: 'genshin-impact',
+    provider: 'genshin-impact-hoyoverse'
   },
   'dark-war-survival': {
     appId: 6670441558,
@@ -668,6 +694,7 @@ const GAME_DISPLAY_NAMES: Record<string, string> = {
   'cookierun-crumble': 'CookieRun: Crumble',
   'dark-war-survival': 'Dark War: Survival',
   vampir: 'VAMPIR',
+  'genshin-impact': "Genshin Impact",
   'last-z-survival-shooter': "Last Z: Survival Shooter",
   'palmon-survival': "Palmon: Survival",
   'soul-land-awakening-world': "Soul Land: Awakening World",

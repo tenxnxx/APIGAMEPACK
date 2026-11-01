@@ -150,6 +150,7 @@ import { fetchHololiveDreamsPacks } from '../services/hololive-dreams-packs.serv
 import { fetchSoulLandAwakeningWorldPacks } from '../services/soul-land-awakening-world-packs.service'
 import { fetchPalmonSurvivalPacks } from '../services/palmon-survival-packs.service'
 import { fetchLastZSurvivalShooterPacks } from '../services/last-z-survival-shooter-packs.service'
+import { fetchGenshinImpactPacks } from '../services/genshin-impact-packs.service'
 import {
   VampirInvalidUpstreamResponseError,
   VampirUpstreamUnavailableError,
@@ -616,6 +617,19 @@ export const gamesPacksRoutes = new Elysia().get(
     if (game.provider === 'last-z-survival-shooter-omnilojo') {
       try {
         return await fetchLastZSurvivalShooterPacks()
+      } catch (error) {
+        if (error instanceof AppStoreGameUpstreamUnavailableError) {
+          return status(502, { error: 'Upstream service unavailable' })
+        }
+        if (error instanceof AppStoreGameInvalidUpstreamResponseError) {
+          return status(502, { error: 'Invalid upstream response' })
+        }
+        throw error
+      }
+    }
+    if (game.provider === 'genshin-impact-hoyoverse') {
+      try {
+        return await fetchGenshinImpactPacks()
       } catch (error) {
         if (error instanceof AppStoreGameUpstreamUnavailableError) {
           return status(502, { error: 'Upstream service unavailable' })
