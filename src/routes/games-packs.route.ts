@@ -134,6 +134,11 @@ import {
   fetchCookieRunClassicAppStorePacks
 } from '../services/cookierun-classic-appstore-packs.service'
 import {
+  CookieRunCrumbleInvalidUpstreamResponseError,
+  CookieRunCrumbleUpstreamUnavailableError,
+  fetchCookieRunCrumblePacks
+} from '../services/cookierun-crumble-appstore-packs.service'
+import {
   fetchDeltaForcePacks
 } from '../services/delta-force-packs.service'
 import {
@@ -508,6 +513,19 @@ export const gamesPacksRoutes = new Elysia().get(
           return status(502, { error: 'Upstream service unavailable' })
         }
         if (error instanceof CookieRunClassicAppStoreInvalidUpstreamResponseError) {
+          return status(502, { error: 'Invalid upstream response' })
+        }
+        throw error
+      }
+    }
+    if (game.provider === 'cookierun-crumble-appstore') {
+      try {
+        return await fetchCookieRunCrumblePacks()
+      } catch (error) {
+        if (error instanceof CookieRunCrumbleUpstreamUnavailableError) {
+          return status(502, { error: 'Upstream service unavailable' })
+        }
+        if (error instanceof CookieRunCrumbleInvalidUpstreamResponseError) {
           return status(502, { error: 'Invalid upstream response' })
         }
         throw error

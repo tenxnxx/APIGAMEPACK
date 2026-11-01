@@ -10,6 +10,7 @@ export type GameProvider =
   | 'mlbb-mobapay'
   | 'cookierun-classic-appstore'
   | 'cookierun-classic-24buym'
+  | 'cookierun-crumble-appstore'
   | 'lastwar-24buym'
   | 'heartopia-xd'
   | 'roblox-premiumfeatures'
@@ -151,6 +152,21 @@ export const GAME_REGISTRY: Record<string, GameRegistryEntry> = {
     appId: 6759596824,
     slug: 'cookierun-classic',
     provider: 'cookierun-classic-appstore'
+  },
+  'cookierun-crumble': {
+    appId: 6749251466,
+    slug: 'cookierun-crumble',
+    provider: 'cookierun-crumble-appstore'
+  },
+  'cookie-run-crumble': {
+    appId: 6749251466,
+    slug: 'cookierun-crumble',
+    provider: 'cookierun-crumble-appstore'
+  },
+  crumble: {
+    appId: 6749251466,
+    slug: 'cookierun-crumble',
+    provider: 'cookierun-crumble-appstore'
   },
   'cookierun-classic-24buym': {
     appId: 24001,
@@ -456,6 +472,7 @@ const GAME_DISPLAY_NAMES: Record<string, string> = {
   'lastwar-24buym': 'Last War (24buym)',
   'cookierun-classic': 'Cookie Run: Classic',
   'cookierun-classic-24buym': 'Cookie Run: Classic (24buym)',
+  'cookierun-crumble': 'CookieRun: Crumble',
   heartopia: 'Heartopia',
   roblox: 'Roblox',
   'wuthering-waves': 'Wuthering Waves',
