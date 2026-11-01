@@ -13,6 +13,7 @@ export type GameProvider =
   | 'cookierun-crumble-appstore'
   | 'darkwar-survival-webshop'
   | 'vampir-netmarble'
+  | 'hololive-dreams-appstore'
   | 'zenless-zone-zero-hoyoverse'
   | 'torchlight-infinite-appstore'
   | 'lastwar-24buym'
@@ -231,6 +232,31 @@ export const GAME_REGISTRY: Record<string, GameRegistryEntry> = {
     appId: 1606356401,
     slug: 'zenless-zone-zero',
     provider: 'zenless-zone-zero-hoyoverse'
+  },
+  'hololive-dreams': {
+    appId: 6756641249,
+    slug: 'hololive-dreams',
+    provider: 'hololive-dreams-appstore'
+  },
+  holodori: {
+    appId: 6756641249,
+    slug: 'hololive-dreams',
+    provider: 'hololive-dreams-appstore'
+  },
+  holodreams: {
+    appId: 6756641249,
+    slug: 'hololive-dreams',
+    provider: 'hololive-dreams-appstore'
+  },
+  hololivedreams: {
+    appId: 6756641249,
+    slug: 'hololive-dreams',
+    provider: 'hololive-dreams-appstore'
+  },
+  'hololive-dreams-qualiarts': {
+    appId: 6756641249,
+    slug: 'hololive-dreams',
+    provider: 'hololive-dreams-appstore'
   },
   'dark-war-survival': {
     appId: 6670441558,
@@ -564,6 +590,7 @@ const GAME_DISPLAY_NAMES: Record<string, string> = {
   'cookierun-crumble': 'CookieRun: Crumble',
   'dark-war-survival': 'Dark War: Survival',
   vampir: 'VAMPIR',
+  'hololive-dreams': "hololive Dreams",
   'zenless-zone-zero': "Zenless Zone Zero",
   'torchlight-infinite': "Torchlight: Infinite",
   heartopia: 'Heartopia',

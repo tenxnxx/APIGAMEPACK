@@ -127,7 +127,7 @@ export function amountFields(c: AsClassified) {
   if (bonus == null)
     out.bonus_null_reason =
       'No bonus stated on the official App Store listing (any first-purchase / event bonus is shown in-game only); not assumed to be 0'
-  else if (c.bonus_note) out.bonus_note = c.bonus_note
+  if (c.bonus_note) out.bonus_note = c.bonus_note
   if (base == null || bonus == null)
     out.total_null_reason = base == null ? 'Base amount unknown' : 'Bonus not published by an official source, so base+bonus total is not stated'
   return out
