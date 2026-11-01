@@ -13,6 +13,7 @@ export type GameProvider =
   | 'cookierun-crumble-appstore'
   | 'darkwar-survival-webshop'
   | 'vampir-netmarble'
+  | 'lootbox-hero-appstore'
   | 'lordrush-official'
   | 'genshin-impact-hoyoverse'
   | 'last-z-survival-shooter-omnilojo'
@@ -383,6 +384,31 @@ export const GAME_REGISTRY: Record<string, GameRegistryEntry> = {
     slug: 'lordrush',
     provider: 'lordrush-official'
   },
+  'lootbox-hero': {
+    appId: 6757577016,
+    slug: 'lootbox-hero',
+    provider: 'lootbox-hero-appstore'
+  },
+  lootbox: {
+    appId: 6757577016,
+    slug: 'lootbox-hero',
+    provider: 'lootbox-hero-appstore'
+  },
+  lootboxhero: {
+    appId: 6757577016,
+    slug: 'lootbox-hero',
+    provider: 'lootbox-hero-appstore'
+  },
+  heroluakhong: {
+    appId: 6757577016,
+    slug: 'lootbox-hero',
+    provider: 'lootbox-hero-appstore'
+  },
+  'lootbox-hero-appstore': {
+    appId: 6757577016,
+    slug: 'lootbox-hero',
+    provider: 'lootbox-hero-appstore'
+  },
   'dark-war-survival': {
     appId: 6670441558,
     slug: 'dark-war-survival',
@@ -715,6 +741,7 @@ const GAME_DISPLAY_NAMES: Record<string, string> = {
   'cookierun-crumble': 'CookieRun: Crumble',
   'dark-war-survival': 'Dark War: Survival',
   vampir: 'VAMPIR',
+  'lootbox-hero': "LootBox Hero",
   lordrush: "Lordrush",
   'genshin-impact': "Genshin Impact",
   'last-z-survival-shooter': "Last Z: Survival Shooter",

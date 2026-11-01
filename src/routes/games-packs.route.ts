@@ -152,6 +152,7 @@ import { fetchPalmonSurvivalPacks } from '../services/palmon-survival-packs.serv
 import { fetchLastZSurvivalShooterPacks } from '../services/last-z-survival-shooter-packs.service'
 import { fetchGenshinImpactPacks } from '../services/genshin-impact-packs.service'
 import { fetchLordrushPacks } from '../services/lordrush-packs.service'
+import { fetchLootboxHeroPacks } from '../services/lootbox-hero-packs.service'
 import {
   VampirInvalidUpstreamResponseError,
   VampirUpstreamUnavailableError,
@@ -644,6 +645,19 @@ export const gamesPacksRoutes = new Elysia().get(
     if (game.provider === 'lordrush-official') {
       try {
         return await fetchLordrushPacks()
+      } catch (error) {
+        if (error instanceof AppStoreGameUpstreamUnavailableError) {
+          return status(502, { error: 'Upstream service unavailable' })
+        }
+        if (error instanceof AppStoreGameInvalidUpstreamResponseError) {
+          return status(502, { error: 'Invalid upstream response' })
+        }
+        throw error
+      }
+    }
+    if (game.provider === 'lootbox-hero-appstore') {
+      try {
+        return await fetchLootboxHeroPacks()
       } catch (error) {
         if (error instanceof AppStoreGameUpstreamUnavailableError) {
           return status(502, { error: 'Upstream service unavailable' })
