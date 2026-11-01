@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
 import { app } from './index'
 import { clearPacksCache } from './lib/packs-cache'
-import { palmonContents, palmonCurrency, palmonLine, stripHtml } from './services/palmon-survival-packs.service'
+import { palmonContents, palmonCurrency, palmonFillOtherCurrency, palmonLine, stripHtml } from './services/palmon-survival-packs.service'
 
 const originalFetch = globalThis.fetch
 beforeEach(() => clearPacksCache())
@@ -66,18 +66,47 @@ describe('Palmon: Survival (Lilith Store + App Store official)', () => {
     expect(b.categories.map((c: any) => c.packCount)).toEqual([2, 2])
     const v = by(b, 'webstore.package.t1000')
     expect(v).toMatchObject({ kind: 'currency', item_pack: false, item: 'Premium Voucher', name_en: '99999 Premium Voucher', name_th: '99999 บัตรกำนัลพรีเมียม', price_thb: 34900, price_usd: null, baseItemAmount: 99999, bonusItemAmount: 5000, totalItemAmount: 104999 })
+    expect(v.price_usd_null_reason).toMatch(/top out at THB 4990/)
     expect(v.price_usd_null_reason).toMatch(/no FX conversion/)
     expect(v.description_th).toContain('ของขวัญพิเศษ')
+    // THB 35 voucher = App Store TH tier t1 (THB 35) -> same Apple item on App Store US = USD 0.99
+    const t1 = by(b, 'webstore.package.t1')
+    expect(t1).toMatchObject({ price_thb: 35, price_usd: 0.99, prices: { THB: 35, USD: 0.99 } })
+    expect(t1.price_usd_null_reason).toBeUndefined()
+    expect(t1.price_thb_source).toContain('lilith-store')
+    expect(t1.price_usd_source).toContain('apple-app-store-us (item 11)')
+    expect(t1.price_usd_match).toMatchObject({ method: 'identical-store-currency-price', store_currency: 'THB', store_price: 35, apple_product_id: P + 't1' })
+    expect(Object.keys(t1).indexOf('price_thb')).toBeLessThan(Object.keys(t1).indexOf('price_usd'))
     expect(by(b, P + 't1')).toMatchObject({ kind: 'bundle', item_pack: true, price_thb: 35, price_usd: 0.99, contents: null, name_th: null })
     expect(by(b, P + 't150').price_usd_null_reason).toMatch(/no FX conversion/)
   })
 
-  it('store serving USD (non-Thai region): USD kept, THB null with reason (no FX)', async () => {
+  it('store serving USD (non-Thai region): USD kept, THB from the App Store TH tier with the identical USD price', async () => {
     mock({ [STORE]: store('USA(USD)', [0.99, 999.99]), ...apple })
     const b: any = await (await get()).json()
     const v = by(b, 'webstore.package.t1')
-    expect(v).toMatchObject({ price_thb: null, price_usd: 0.99, baseItemAmount: 99, bonusItemAmount: 5, totalItemAmount: 104 })
-    expect(v.price_thb_null_reason).toMatch(/region/)
+    expect(v).toMatchObject({ price_thb: 35, price_usd: 0.99, prices: { THB: 35, USD: 0.99 }, baseItemAmount: 99, bonusItemAmount: 5, totalItemAmount: 104 })
+    expect(v.price_thb_source).toContain('apple-app-store-th')
+    expect(v.price_usd_source).toContain('lilith-store')
+    expect(v.price_thb_null_reason).toBeUndefined()
+    const big = by(b, 'webstore.package.t1000')
+    expect(big).toMatchObject({ price_thb: null, price_usd: 999.99 })
+    expect(big.price_thb_null_reason).toMatch(/No App Store tier is priced USD 999.99/)
+  })
+
+  it('no exact tier / ambiguous tiers / App Store down -> null with reason (no FX)', () => {
+    const sp2 = (price: number): any => ({ product_id: 'w', price, price_thb: price, price_usd: null, prices: { THB: price, USD: null }, price_usd_null_reason: 'x' })
+    const tier = (id: string, thb: number, usd: number | null) => ({ product_id: id, apple_item_id: id, name: id, price_thb: thb, price_usd: usd, price_usd_source: 'apple-app-store-us (item ' + id + ')' })
+    const a = sp2(349), b = sp2(99), c = sp2(35), d = sp2(35)
+    palmonFillOtherCurrency([a, b, c], [tier('t1', 35, 0.99), tier('t3', 99, 2.99), tier('t3b', 99, 3.49), tier('t10', 399, 9.99)], 'THA(THB)')
+    expect(a.price_usd).toBeNull()
+    expect(a.price_usd_null_reason).toMatch(/No App Store tier is priced THB 349.*differs from every Apple tier/)
+    expect(b.price_usd).toBeNull()
+    expect(b.price_usd_null_reason).toMatch(/2 App Store tiers share THB 99 but have different USD prices/)
+    expect(c.price_usd).toBe(0.99)
+    palmonFillOtherCurrency([d], null, 'THA(THB)', 'HTTP 503')
+    expect(d.price_usd).toBeNull()
+    expect(d.price_usd_null_reason).toMatch(/unavailable \(HTTP 503\)/)
   })
 
   it('store down -> App Store only; everything down -> 502', async () => {

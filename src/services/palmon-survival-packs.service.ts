@@ -153,11 +153,11 @@ export function buildStorePack(th: StoreProduct, en: StoreProduct | undefined) {
   }
   if (!p.contents) p.contents_null_reason = 'The official store description does not itemise the contents'
   if (cur.code !== 'THB')
-    p.price_thb_null_reason = `Lilith Store picks the currency from the visitor's region and served ${th.currency || 'an unknown currency'} for this request, not THB; no FX conversion (THB in-app prices are in the App Store categories)`
+    p.price_thb_null_reason = `Lilith Store picks the currency from the visitor's region and served ${th.currency || 'an unknown currency'} for this request, not THB; no FX conversion`
   if (cur.code !== 'USD')
     p.price_usd_null_reason =
       cur.code === 'THB'
-        ? 'Lilith Store served THB for this request (Thai region); web-store vouchers have no App Store SKU to take a USD price from; no FX conversion'
+        ? 'Lilith Store served THB for this request (Thai region); USD not yet matched to an App Store tier; no FX conversion'
         : `Lilith Store served ${th.currency || 'an unknown currency'} for this request; no FX conversion`
   if (!nameEn) p.name_en_null_reason = 'English store listing unavailable for this product'
   if (!nameTh) p.name_th_null_reason = 'Thai store listing gave no name for this product'
@@ -174,6 +174,56 @@ export async function fetchPalmonStorePacks(signal?: AbortSignal) {
   const packs = th.products.map((p) => buildStorePack(p, enById.get(p.productId)))
   packs.sort((a, b) => (a.price ?? Infinity) - (b.price ?? Infinity) || String(a.product_id).localeCompare(String(b.product_id)))
   return { currency: th.currency, enCurrency: en?.currency ?? null, packs }
+}
+
+/**
+ * The Lilith Store serves one currency (picked from the visitor region; there is no official currency / region parameter on
+ * guestProducts). The other currency is taken from Apple's official price tier with the IDENTICAL price in the store's
+ * currency: store THB -> App Store TH tier with that THB price -> the same Apple item's USD price (App Store US, else
+ * KH / LA / MM); store USD -> App Store USD tier with that USD price -> the same Apple item's App Store TH price.
+ * No exact match (or matches that disagree) -> null with a reason. No FX conversion.
+ */
+export function palmonFillOtherCurrency(storePacks: any[], asPacks: any[] | null, storeCurrency: string | null, appStoreError?: string) {
+  const code = palmonCurrency(storeCurrency).code
+  if (code !== 'THB' && code !== 'USD') return
+  const other = code === 'THB' ? 'USD' : 'THB'
+  const own = code === 'THB' ? 'price_thb' : 'price_usd'
+  const oth = code === 'THB' ? 'price_usd' : 'price_thb'
+  const ownCc = code === 'THB' ? 'App Store TH' : 'App Store USD storefronts (US/KH/LA/MM)'
+  const tiers = (asPacks ?? []).filter((t) => typeof t[own] === 'number')
+  const top = tiers.length ? Math.max(...tiers.map((t) => t[own])) : null
+  for (const p of storePacks) {
+    const price = p[own]
+    if (typeof price !== 'number') continue
+    delete p[oth + '_null_reason']
+    if (!asPacks) {
+      p[oth + '_null_reason'] = `Lilith Store served ${code} only, and the App Store tiers needed for the ${other} price were unavailable (${appStoreError ?? 'error'}); no FX conversion`
+      continue
+    }
+    const hits = tiers.filter((t) => t[own] === price)
+    const withOther = hits.filter((t) => typeof t[oth] === 'number')
+    const vals = [...new Set(withOther.map((t) => t[oth]))]
+    if (vals.length === 1) {
+      const t = withOther[0]
+      p[oth] = vals[0]
+      p.prices[other] = vals[0]
+      p[oth + '_source'] =
+        `${t[oth + '_source']} - Apple tier ${t.product_id} ("${t.name}") has the identical ${code} ${price} price as this Lilith Store product on ${ownCc}` +
+        (withOther.length > 1 ? ` (${withOther.length} tiers, same ${other} price)` : '')
+      p[oth + '_match'] = { method: 'identical-store-currency-price', store_currency: code, store_price: price, apple_product_id: t.product_id, apple_item_id: t.apple_item_id, apple_name: t.name }
+    } else {
+      p[oth] = null
+      p.prices[other] = null
+      p[oth + '_source'] = null
+      p[oth + '_null_reason'] = vals.length > 1
+        ? `${hits.length} App Store tiers share ${code} ${price} but have different ${other} prices (${vals.join(' / ')}); not guessing, no FX conversion`
+        : hits.length
+          ? `The App Store tier priced ${code} ${price} has no ${other} price on the ${other === 'USD' ? 'US/KH/LA/MM' : 'TH'} storefront; no FX conversion`
+          : `No App Store tier is priced ${code} ${price} on ${ownCc}` +
+            (top != null && price > top ? ` (Apple tiers for this game top out at ${code} ${top})` : ` (the web store price differs from every Apple tier)`) +
+            `, so there is no official ${other} price for it; the Lilith Store shows ${other} only to visitors from another region (no geo spoofing), no FX conversion`
+    }
+  }
 }
 
 export function palmonAppStoreClassify(it: AsItemInput): AsClassified {
@@ -201,7 +251,7 @@ const CONFIG: AppStoreGameConfig = {
 
 const NOTES = [
   `Palmon: Survival is published by Lilith Games (App Store seller LILITH TECHNOLOGY HONG KONG LIMITED) and is sold on the Thai App Store. Official webshop: Lilith Store ${PALMON_STORE_URL}.`,
-  'Lilith Store: public pre-login product list (no login / UID). The store picks the currency from the visitor region (THB for Thailand); the price is shown only in the currency it served, the other is null with a reason (no FX). Premium Voucher base = official name amount, bonus = the store bonusNum ("Special Gift"), total = base + bonus. The "Limited-Time Event" / "Daily Rewards" tabs need a game-account login and are not included.',
+  'Lilith Store: public pre-login product list (no login / UID). The store picks the currency from the visitor region (THB for Thailand); its public API has no official currency / region parameter. The other currency comes from the Apple App Store tier with the identical price in the served currency (THB -> App Store TH tier -> same Apple item on App Store US/KH/LA/MM; USD -> App Store USD tier -> same item on App Store TH). No exact match -> null with a reason (no FX, no geo spoofing). Premium Voucher base = official name amount, bonus = the store bonusNum ("Special Gift"), total = base + bonus. The "Limited-Time Event" / "Daily Rewards" tabs need a game-account login and are not included.',
   'App Store: Lilith lists in-app purchases only as generic price tiers ("$4.99 Pack", product com.funfizz.palmon.package.tN); Apple does not itemise what each unlocks, so contents are null with a reason. THB from App Store TH, USD from App Store US -> KH/LA/MM matched by offerName.'
 ]
 
@@ -222,6 +272,13 @@ export async function fetchPalmonSurvivalPacks(options?: { signal?: AbortSignal 
   }
   const as: any = asR.status === 'fulfilled' ? asR.value : null
   if (as) cats.push(...as.categories)
+  if (storeR.status === 'fulfilled')
+    palmonFillOtherCurrency(
+      storeR.value.packs,
+      as ? as.categories.flatMap((c: any) => c.packs) : null,
+      storeR.value.currency,
+      asR.status === 'rejected' ? (asR.reason instanceof Error ? asR.reason.message : String(asR.reason)) : undefined
+    )
   let n = 0
   const categories = cats.map((c, i) => {
     for (const p of c.packs) p.id = ++n
