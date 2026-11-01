@@ -148,6 +148,7 @@ import { AppStoreGameInvalidUpstreamResponseError, AppStoreGameUpstreamUnavailab
 import { fetchZenlessZoneZeroPacks } from '../services/zenless-zone-zero-packs.service'
 import { fetchHololiveDreamsPacks } from '../services/hololive-dreams-packs.service'
 import { fetchSoulLandAwakeningWorldPacks } from '../services/soul-land-awakening-world-packs.service'
+import { fetchPalmonSurvivalPacks } from '../services/palmon-survival-packs.service'
 import {
   VampirInvalidUpstreamResponseError,
   VampirUpstreamUnavailableError,
@@ -588,6 +589,19 @@ export const gamesPacksRoutes = new Elysia().get(
     if (game.provider === 'soul-land-awakening-world-appstore') {
       try {
         return await fetchSoulLandAwakeningWorldPacks()
+      } catch (error) {
+        if (error instanceof AppStoreGameUpstreamUnavailableError) {
+          return status(502, { error: 'Upstream service unavailable' })
+        }
+        if (error instanceof AppStoreGameInvalidUpstreamResponseError) {
+          return status(502, { error: 'Invalid upstream response' })
+        }
+        throw error
+      }
+    }
+    if (game.provider === 'palmon-survival-lilith') {
+      try {
+        return await fetchPalmonSurvivalPacks()
       } catch (error) {
         if (error instanceof AppStoreGameUpstreamUnavailableError) {
           return status(502, { error: 'Upstream service unavailable' })

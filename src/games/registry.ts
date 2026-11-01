@@ -13,6 +13,7 @@ export type GameProvider =
   | 'cookierun-crumble-appstore'
   | 'darkwar-survival-webshop'
   | 'vampir-netmarble'
+  | 'palmon-survival-lilith'
   | 'soul-land-awakening-world-appstore'
   | 'hololive-dreams-appstore'
   | 'zenless-zone-zero-hoyoverse'
@@ -288,6 +289,26 @@ export const GAME_REGISTRY: Record<string, GameRegistryEntry> = {
     appId: 6762107883,
     slug: 'soul-land-awakening-world',
     provider: 'soul-land-awakening-world-appstore'
+  },
+  'palmon-survival': {
+    appId: 6739345737,
+    slug: 'palmon-survival',
+    provider: 'palmon-survival-lilith'
+  },
+  palmon: {
+    appId: 6739345737,
+    slug: 'palmon-survival',
+    provider: 'palmon-survival-lilith'
+  },
+  palmonsurvival: {
+    appId: 6739345737,
+    slug: 'palmon-survival',
+    provider: 'palmon-survival-lilith'
+  },
+  'palmon-survival-lilith': {
+    appId: 6739345737,
+    slug: 'palmon-survival',
+    provider: 'palmon-survival-lilith'
   },
   'dark-war-survival': {
     appId: 6670441558,
@@ -621,6 +642,7 @@ const GAME_DISPLAY_NAMES: Record<string, string> = {
   'cookierun-crumble': 'CookieRun: Crumble',
   'dark-war-survival': 'Dark War: Survival',
   vampir: 'VAMPIR',
+  'palmon-survival': "Palmon: Survival",
   'soul-land-awakening-world': "Soul Land: Awakening World",
   'hololive-dreams': "hololive Dreams",
   'zenless-zone-zero': "Zenless Zone Zero",
