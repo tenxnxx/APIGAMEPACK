@@ -156,7 +156,9 @@ export async function fetchPackagesPayload(
   config: CenturyGameConfig,
   currency: string,
   signal: AbortSignal,
-  fixture?: CenturyPackagesPayload
+  fixture?: CenturyPackagesPayload,
+  /** Store UI language (store sends localized package_display_name / tag images). Default EN. */
+  languageCode = 'EN'
 ): Promise<CenturyPackagesPayload> {
   if (fixture) return fixture
 
@@ -165,7 +167,7 @@ export async function fetchPackagesPayload(
   const unsigned = {
     game_id: String(config.gameId),
     currency,
-    language_code: 'EN',
+    language_code: languageCode,
     os: 'pc',
     display_all: '1',
     ts: String(Date.now()),
